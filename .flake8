@@ -1,0 +1,11 @@
+# NOTE: flake8 settings for black compatibility:
+# https://ljvmiranda921.github.io/notebook/2018/06/21/precommits-using-black-and-flake8/
+
+[flake8]
+ignore = E203, E266, E501, W503, F403, E731
+max-line-length = 88
+max-complexity = 18
+select = B,C,E,F,I,W,T4,B9
+# Ignore E402 in experiment files since Sacred needs to be initialized before RLLib imports.
+per-file-ignores =
+    maximal_paired/experiments/*.py:E402

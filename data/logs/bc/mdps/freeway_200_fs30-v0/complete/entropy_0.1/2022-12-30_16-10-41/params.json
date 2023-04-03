@@ -1,0 +1,33 @@
+{
+  "batch_mode": "truncate_episodes",
+  "compress_observations": true,
+  "entropy_coeff": 0.1,
+  "env": "mdps/freeway_200_fs30-v0",
+  "env_config": {},
+  "evaluation_config": {
+    "explore": true,
+    "input": "sampler"
+  },
+  "evaluation_duration": 10,
+  "evaluation_duration_unit": "episodes",
+  "evaluation_interval": 25,
+  "evaluation_num_workers": 2,
+  "framework": "torch",
+  "grad_clip": null,
+  "input": "data/atari_human_data/rllib_complete_minimal_actions/freeway",
+  "lr": 0.001,
+  "model": {
+    "custom_model": null,
+    "custom_model_config": {},
+    "max_seq_len": 1,
+    "vf_share_layers": false
+  },
+  "num_envs_per_worker": 1,
+  "num_gpus": 1,
+  "num_workers": 0,
+  "seed": 0,
+  "sgd_minibatch_size": 500,
+  "simple_optimizer": false,
+  "train_batch_size": 2000,
+  "validation_prop": 0
+}
