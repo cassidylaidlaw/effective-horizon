@@ -35,6 +35,13 @@ function Base.get(dict::ParallelDict, key)
     end
 end
 
+function Base.get(dict::ParallelDict, key, default)
+    i = subdict_index(key, length(dict.subdicts))
+    lock(dict.locks[i]) do
+        get(dict.subdicts[i], key, default)
+    end
+end
+
 function Base.getindex(dict::ParallelDict, key)
     i = subdict_index(key, length(dict.subdicts))
     lock(dict.locks[i]) do

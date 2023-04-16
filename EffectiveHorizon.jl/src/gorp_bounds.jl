@@ -799,9 +799,10 @@ function compute_simple_effective_horizon(
         exploration_policy = exploration_policy,
     )
 
-    var_bounds = Array{Float64,3}(undef, horizon, num_states, num_actions)
+    var_bounds =
+        TimestepStateDictArray{Float64,3,1}(NaN, horizon, num_states, num_actions)
     for timestep in ProgressBar(1:horizon)
-        Threads.@threads for state = 1:num_states
+        Threads.@threads for state in vi.visitable_states[timestep]
             for action = 1:num_actions
                 q = vi.exploration_qs[timestep, state, action]
                 worst_q = vi.worst_qs[timestep, state, action]
@@ -813,10 +814,6 @@ function compute_simple_effective_horizon(
     end
 
     current_qs = vi.exploration_qs
-    state_ms = zeros(BigInt, horizon, num_states)
-    state_vars = zeros(Float64, horizon, num_states)
-    state_gaps = zeros(Float64, horizon, num_states)
-    states_can_be_visited = zeros(Bool, horizon, num_states)
 
     results = EffectiveHorizonResults(
         Vector{Int32}(undef, 0),
@@ -829,15 +826,16 @@ function compute_simple_effective_horizon(
     k = 1
     while k < results.effective_horizon
         k_works = Threads.Atomic{Bool}(true)
-        state_ms .= 0
-        state_vars .= 0
-        state_gaps .= 0
-        states_can_be_visited .= false
+        state_ms = TimestepStateDictArray{BigInt,2,0}(0, horizon, num_states)
+        state_vars = TimestepStateDictArray{Float64,2,0}(0, horizon, num_states)
+        state_gaps = TimestepStateDictArray{Float64,2,0}(0, horizon, num_states)
+        states_can_be_visited =
+            TimestepStateDictArray{Bool,2,0}(false, horizon, num_states)
         states_can_be_visited[1, 1] = true
         timesteps_iter = ProgressBar(1:horizon)
         set_description(timesteps_iter, "Trying k = $(k)")
         for timestep in timesteps_iter
-            Threads.@threads for state = 1:num_states
+            Threads.@threads for state in vi.visitable_states[timestep]
                 if states_can_be_visited[timestep, state]
                     max_q = -Inf64
                     max_suboptimal_q = -Inf64
@@ -898,7 +896,7 @@ function compute_simple_effective_horizon(
 
         # Run a Bellman backup.
         for timestep in ProgressBar(1:horizon-1)
-            Threads.@threads for state = 1:num_states
+            Threads.@threads for state in vi.visitable_states[timestep]
                 for action = 1:num_actions
                     next_state = transitions[state, action] + 1
                     max_next_q = -Inf64
