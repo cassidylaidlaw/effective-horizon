@@ -1,6 +1,6 @@
 # Bridging RL Theory and Practice with the Effective Horizon
 
-This repository contains code and data for the paper [Bridging RL Theory and Practice with the Effective Horizon](#). It includes the BRIDGE dataset and the programs used to construct and analyze it.
+This repository contains code and data for the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). It includes the BRIDGE dataset and the programs used to construct and analyze it.
 
 Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [RLlib](https://www.ray.io/rllib) to run the deep RL experiments.
 
