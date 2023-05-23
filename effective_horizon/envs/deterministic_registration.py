@@ -24,6 +24,9 @@ from .minigrid import build_env_maker as build_minigrid_env_maker
 from .procgen import DeterministicProcgenEnv, DeterministicProcgenEnvConfig
 
 
+GYM_NAMESPACE = "BRIDGE"
+
+
 def register_atari_envs():
     atari_reward_factors: Dict[str, float] = {
         "alien": 10.0,
@@ -98,12 +101,12 @@ def register_atari_envs():
                 "reward_scale": 1 / atari_reward_factors[rom],
             }
             register(
-                id=f"mdps/{env_id}-v0",
+                id=f"{GYM_NAMESPACE}/{env_id}-v0",
                 entry_point=AtariEnv,
                 kwargs={"config": config},
             )
             register_env(
-                f"mdps/{env_id}-v0",
+                f"{GYM_NAMESPACE}/{env_id}-v0",
                 lambda _: AtariEnv(config),
             )
 
@@ -167,12 +170,12 @@ def register_procgen_envs():
                         "horizon": horizon,
                     }
                     register(
-                        id=f"mdps/{env_id}-v0",
+                        id=f"{GYM_NAMESPACE}/{env_id}-v0",
                         entry_point=DeterministicProcgenEnv,
                         kwargs={"config": config},
                     )
                     register_env(
-                        f"mdps/{env_id}-v0",
+                        f"{GYM_NAMESPACE}/{env_id}-v0",
                         lambda _: DeterministicProcgenEnv(config),
                     )
 
@@ -222,14 +225,14 @@ def register_minigrid_envs():
                 env_id += "-v0"
 
                 register(
-                    id=f"mdps/{env_id}",
+                    id=f"{GYM_NAMESPACE}/{env_id}",
                     entry_point=build_minigrid_env_maker(
                         env_spec.id,
                         shaping_config=shaping_config,
                     ),
                 )
                 register_env(
-                    f"mdps/{env_id}",
+                    f"{GYM_NAMESPACE}/{env_id}",
                     build_minigrid_env_maker(
                         env_spec.id,
                         shaping_config=shaping_config,

@@ -27,7 +27,7 @@ def test_random_deterministic_mdp():
     sparse_transitions, rewards_vector = get_sparse_mdp(transitions, rewards)
 
     mdp_name = os.path.basename(os.path.dirname(mdp_fname))
-    env_id = f"mdps/{mdp_name}"
+    env_id = f"BRIDGE/{mdp_name}"
     if not re.match(r".*-v\d+", env_id):
         env_id += "-v0"
     logger.info(f"creating gym env {env_id}")
@@ -107,7 +107,7 @@ def test_atari_framestack():
     screen_ids = mdp["screen_mapping"]
 
     mdp_name = os.path.basename(os.path.dirname(mdp_fname))
-    env_id = f"mdps/{mdp_name}-v0"
+    env_id = f"BRIDGE/{mdp_name}-v0"
     logger.info(f"creating gym env {env_id}")
     env = gym.make(env_id)
     horizon: int = cast(Any, env).horizon

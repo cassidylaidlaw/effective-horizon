@@ -17,7 +17,7 @@ def test_pretrain_atari_bc(random_seed, tmp_path):
     run = train_bc_ex.run(
         config_updates={
             "log_dir": tmp_path / "logs",
-            "env_name": "mdps/freeway_10_fs30-v0",
+            "env_name": "BRIDGE/freeway_10_fs30-v0",
             "input": "data/atari_human_data/rllib_complete_minimal_actions/freeway",
             "num_workers": 0,
             "entropy_coeff": 0.1,
@@ -56,9 +56,9 @@ def test_pretrain_procgen(random_seed, tmp_path):
 def test_train_ppo(random_seed, tmp_path):
     mdp, optimal_reward = random.choice(
         [
-            ("mdps/freeway_10_fs30-v0", 1),
-            ("mdps/maze_easy_l0_30_fs1-v0", 10),
-            ("mdps/MiniGrid-KeyCorridorS3R1-v0", 1),
+            ("BRIDGE/freeway_10_fs30-v0", 1),
+            ("BRIDGE/maze_easy_l0_30_fs1-v0", 10),
+            ("BRIDGE/MiniGrid-KeyCorridorS3R1-v0", 1),
         ]
     )
     run = train_ex.run(
@@ -83,9 +83,9 @@ def test_train_ppo(random_seed, tmp_path):
 def test_train_dqn(random_seed, tmp_path):
     mdp, optimal_reward = random.choice(
         [
-            ("mdps/freeway_10_fs30-v0", 1),
-            ("mdps/maze_easy_l0_30_fs1-v0", 10),
-            ("mdps/MiniGrid-KeyCorridorS3R1-v0", 1),
+            ("BRIDGE/freeway_10_fs30-v0", 1),
+            ("BRIDGE/maze_easy_l0_30_fs1-v0", 10),
+            ("BRIDGE/MiniGrid-KeyCorridorS3R1-v0", 1),
         ]
     )
     run = train_ex.run(

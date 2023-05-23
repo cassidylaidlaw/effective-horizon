@@ -104,7 +104,7 @@ def test_construct_minigrid_mdp(tmp_path):
             "EffectiveHorizon.jl/src/construct_mdp.jl",
             "--minigrid",
             "--env_name",
-            "mdps/MiniGrid-KeyCorridorS3R1-v0",
+            "BRIDGE/MiniGrid-KeyCorridorS3R1-v0",
             "-o",
             tmp_path,
             "--horizon",
