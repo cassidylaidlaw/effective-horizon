@@ -23,7 +23,6 @@ from .minigrid import DEFAULT_SHAPED_REWARD_CONFIG, MinigridShapedRewardWrapper
 from .minigrid import build_env_maker as build_minigrid_env_maker
 from .procgen import DeterministicProcgenEnv, DeterministicProcgenEnvConfig
 
-
 GYM_NAMESPACE = "BRIDGE"
 
 
