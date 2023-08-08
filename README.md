@@ -1,6 +1,6 @@
 # Bridging RL Theory and Practice with the Effective Horizon
 
-This repository contains code and data for the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). It includes the BRIDGE dataset and the programs used to construct and analyze it.
+This repository contains code for the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/record/8226192).
 
 Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [RLlib](https://www.ray.io/rllib) to run the deep RL experiments.
 
@@ -20,9 +20,9 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
         julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
 
-## Data and Pretrained Models
+## Data
 
-Coming soon!
+The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192
 
 ## Usage
 
@@ -205,14 +205,14 @@ Again, this will create a number of checkpoint files under `data/logs`; we use `
 **Generating tabular versions of exploration policies:** the policies created by the above commands cannot immediately be used for analysis since they are represented by neural networks rather than tabularly. To convert the neural network policies to tabular representations, take the following steps:
 
   1. For Atari MDPs, construct a "framestack" version of the MDP. Since neural network policies for Atari typically take in the last few frames in addition to the current one, we must construct a new tabular representation with states based on multiple frames instead of just one. Run
-
-        python -m effective_horizon.experiments.convert_atari_mdp_to_framestack with mdp=path/to/mdp/consolidated.npz horizon=10 out=path/to/mdp/consolidated_framestack.npz
-
+    
+         python -m effective_horizon.experiments.convert_atari_mdp_to_framestack with mdp=path/to/mdp/consolidated.npz horizon=10 out=path/to/mdp/consolidated_framestack.npz
+     
   2. Now, construct the tabular policy. Run
 
-        python -m effective_horizon.experiments.construct_tabular_policy with mdp=path/to/mdp/consolidated.npz checkpoint=path/to/checkpoint horizon=10 run=RUN out=path/to/mdp/exploration_policy.npy
+         python -m effective_horizon.experiments.construct_tabular_policy with mdp=path/to/mdp/consolidated.npz checkpoint=path/to/checkpoint horizon=10 run=RUN out=path/to/mdp/exploration_policy.npy
     
-    Replace the horizon with the appropriate horizon and specify `run=BC` for Atari and `run=PPO` for Procgen. The resulting `exploration_policy.npy` file can be passed to the analysis scripts as described above.
+     Replace the horizon with the appropriate horizon and specify `run=BC` for Atari and `run=PPO` for Procgen. The resulting `exploration_policy.npy` file can be passed to the analysis scripts as described above.
 
 ## Citation
 
