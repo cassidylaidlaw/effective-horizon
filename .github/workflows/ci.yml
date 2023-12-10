@@ -6,8 +6,14 @@ on:
       - '**'
 
 jobs:
-  test:
+  test_julia:
+    name: Test Julia code
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        python_version: ['3.9'] # ['3.8', '3.9', '3.10', '3.11']
 
     steps:
       - uses: actions/checkout@v2
@@ -15,7 +21,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: ${{ matrix.python_version }}
 
       - name: Install Julia
         uses: julia-actions/setup-julia@latest
@@ -35,21 +41,6 @@ jobs:
           julia  -e 'using Pkg; Pkg.add(PackageSpec(name="JuliaFormatter"))'
           julia  -e 'using JuliaFormatter; format("EffectiveHorizon.jl/src", verbose=true, margin=88)'
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip # This path is specific to Ubuntu
-          # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pip requirements
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          pip install --upgrade -r requirements_dev.txt
-
       - name: Check Julia formatting
         run: |
           julia -e '
@@ -63,27 +54,104 @@ jobs:
           end'
         if: ${{ always() }}
 
-      - name: Run flake8
-        run: flake8 effective_horizon stubs tests
-        if: ${{ always() }}
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.pyversion }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.pyversion }}-
 
-      - name: Run black
-        run: black --check effective_horizon stubs tests
-        if: ${{ always() }}
-
-      - name: Run isort
-        run: isort --check --diff effective_horizon stubs tests
-        if: ${{ always() }}
-
-      - name: Check types
-        if: ${{ always() }}
+      - name: Install pip requirements
         run: |
-          # Shim for this issue: https://github.com/ray-project/ray/issues/14431
-          touch `python -c 'import site; print(site.getsitepackages()[0])'`/ray/py.typed
-          mypy effective_horizon tests
+          pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install --upgrade -r requirements_dev.txt
 
       - name: Run tests
         if: ${{ always() }}
         run: |
           export PYTHONPATH=$(pwd)
-          pytest -n 4 -m "not uses_rllib"
+          pytest --timeout=300 -n 2 -m "uses_julia" --randomize_julia_scripts
+
+  test_python:
+    name: Test Python code
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        python_version: ['3.9'] # ['3.8', '3.9', '3.10', '3.11']
+        rl_framework: ['rllib', 'stable_baselines3']
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.pyversion }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.pyversion }}-
+
+      - name: Install pip requirements
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install --upgrade -r requirements_dev.txt
+      
+      - name: Install RLlib requirements
+        if: matrix.rl_framework == 'rllib'
+        run: |
+          # pydantic is installed by isort but messes up RLlib.
+          pip uninstall -y pydantic
+          pip install 'ray[rllib]>=2.5,<2.6'
+
+      - name: Install Stable-Baselines3 requirements
+        if: matrix.rl_framework == 'stable_baselines3'
+        run: |
+          pip install stable-baselines3==2.2.1 imitation==1.0.0
+
+      - name: Run flake8
+        run: flake8 effective_horizon stubs_rllib tests
+        if: ${{ always() }}
+
+      - name: Run black
+        run: black --check effective_horizon stubs_rllib tests
+        if: ${{ always() }}
+
+      - name: Run isort
+        run: isort --check --diff effective_horizon stubs_rllib tests
+        if: ${{ always() }}
+
+      - name: Check types (RLlib)
+        if: always() && matrix.rl_framework == 'rllib'
+        env:
+          MYPYPATH: stubs_rllib
+        run: |
+          # Shim for this issue: https://github.com/ray-project/ray/issues/14431
+          touch `python -c 'import site; print(site.getsitepackages()[0])'`/ray/py.typed
+          echo -e "[mypy-stable_baselines3.*]\nignore_missing_imports = True\n" >> mypy.ini
+          mypy --exclude='pytest|sb3' effective_horizon tests
+
+      - name: Check types (SB3)
+        if: always() && matrix.rl_framework == 'stable_baselines3'
+        run: |
+          echo -e "[mypy-ray.*]\nignore_missing_imports = True\n" >> mypy.ini
+          mypy --exclude='pytest|/ray/|rllib' effective_horizon tests
+
+      - name: Run tests (RLlib)
+        if: always() && matrix.rl_framework == 'rllib'
+        run: |
+          pytest --timeout=180 -n 2 -m "not uses_julia and not uses_sb3 and not uses_cuda and not slow"
+      
+      - name: Run tests (SB3)
+        if: always() && matrix.rl_framework == 'stable_baselines3'
+        run: |
+          pytest --timeout=180 -n 2 -m "not uses_julia and not uses_rllib and not uses_cuda and not slow"
