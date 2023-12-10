@@ -6,8 +6,8 @@ exclude = ''
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["uses_rllib"]
-timeout = 600
+markers = ["uses_rllib", "uses_sb3", "uses_julia", "uses_cuda", "slow"]
+timeout = 1200
 
 [tool.isort]
 profile = "black"

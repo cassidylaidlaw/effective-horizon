@@ -1,1 +1,1 @@
-{"optimal_return": 10.0, "greedy_return": 10.0}
+{"min_k":1,"optimal_return":10.0,"random_return":5.5408607728269175,"epw":1,"worst_return":0.0,"greedy_returns":[10.0,10.0,10.0,10.0,10.0]}

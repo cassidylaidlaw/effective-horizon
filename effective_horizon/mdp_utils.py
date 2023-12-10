@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
 import tqdm
@@ -51,17 +51,26 @@ class ValueIterationResults(object):
 
 
 def run_value_iteration(
-    sparse_transitions: csr_matrix,
-    rewards_vector: np.ndarray,
+    sparse_transitions: Union[csr_matrix, List[csr_matrix]],
+    rewards_vector: Union[np.ndarray, List[np.ndarray]],
     horizon: int,
     gamma: float = 1,
     exploration_policy: Optional[np.ndarray] = None,
 ) -> ValueIterationResults:
-    num_state_actions, num_states = cast(Tuple[int, int], sparse_transitions.shape)
+    if isinstance(sparse_transitions, list):
+        num_state_actions, num_states = cast(
+            Tuple[int, int], sparse_transitions[0].shape
+        )
+    else:
+        num_state_actions, num_states = cast(Tuple[int, int], sparse_transitions.shape)
     num_actions = num_state_actions // num_states
 
-    done_q = np.zeros((num_states, num_actions), dtype=rewards_vector.dtype)
-    done_v = np.zeros(num_states, dtype=rewards_vector.dtype)
+    if isinstance(rewards_vector, list):
+        reward_dtype = rewards_vector[0].dtype
+    else:
+        reward_dtype = rewards_vector.dtype
+    done_q = np.zeros((num_states, num_actions), dtype=reward_dtype)
+    done_v = np.zeros(num_states, dtype=reward_dtype)
 
     random_qs: List[np.ndarray] = [done_q]
     random_values: List[np.ndarray] = [done_v]
@@ -71,11 +80,19 @@ def run_value_iteration(
     worst_values: List[np.ndarray] = [done_v]
 
     for t in tqdm.tqdm(list(reversed(list(range(horizon)))), desc="Value iteration"):
+        timestep_transitions = (
+            sparse_transitions[t]
+            if isinstance(sparse_transitions, list)
+            else sparse_transitions
+        )
+        timestep_rewards = (
+            rewards_vector[t] if isinstance(rewards_vector, list) else rewards_vector
+        )
         random_qs.insert(
             0,
-            (rewards_vector + gamma * sparse_transitions @ random_values[0]).reshape(
-                (num_states, num_actions)
-            ),
+            (
+                timestep_rewards + gamma * timestep_transitions @ random_values[0]
+            ).reshape((num_states, num_actions)),
         )
         if exploration_policy is None:
             random_values.insert(0, random_qs[0].mean(axis=1))
@@ -84,15 +101,15 @@ def run_value_iteration(
 
         optimal_qs.insert(
             0,
-            (rewards_vector + gamma * sparse_transitions @ optimal_values[0]).reshape(
-                (num_states, num_actions)
-            ),
+            (
+                timestep_rewards + gamma * timestep_transitions @ optimal_values[0]
+            ).reshape((num_states, num_actions)),
         )
         optimal_values.insert(0, optimal_qs[0].max(axis=1))
 
         worst_qs.insert(
             0,
-            (rewards_vector + gamma * sparse_transitions @ worst_values[0]).reshape(
+            (timestep_rewards + gamma * timestep_transitions @ worst_values[0]).reshape(
                 (num_states, num_actions)
             ),
         )

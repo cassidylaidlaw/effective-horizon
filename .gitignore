@@ -1,9 +1,10 @@
 __pycache__
 *.DS_Store
+*.pyc
 data
 report
 docker
 build
-scripts
+/scripts
 figures
 *.ipynb
