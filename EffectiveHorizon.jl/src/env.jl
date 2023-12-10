@@ -20,7 +20,7 @@ function get_screen(env::Env)::Vector{UInt8}
 end
 
 function get_screen(env::Env, buffer::Vector{UInt8})::Int
-    screen = get_state(env)
+    screen = get_screen(env)
     buffer[1:length(screen)] .= screen
     length(screen)
 end
