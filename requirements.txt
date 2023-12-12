@@ -1,6 +1,6 @@
 sacred>=0.8.2
 torch>=1.10.0
-minigrid>=2.2,<2.3
+minigrid>=2.3,<2.4
 gymnasium[atari]
 numpy>=1.20.3
 scipy>=1.8
