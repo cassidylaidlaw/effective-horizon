@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
-        python_version: ['3.8', '3.9', '3.10', '3.11']
+        python_version: ['3.9']
 
     steps:
       - uses: actions/checkout@v2
@@ -81,7 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
-        python_version: ['3.9'] # ['3.8', '3.9', '3.10', '3.11']
+        python_version: ['3.8', '3.9', '3.10', '3.11']
         rl_framework: ['rllib', 'stable_baselines3']
 
     steps:
