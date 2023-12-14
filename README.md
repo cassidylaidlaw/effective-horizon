@@ -1,5 +1,7 @@
 # Bridging RL Theory and Practice with the Effective Horizon
 
+*We have switched our deep RL implementations from RLlib to stable-baselines3 and this repository will soon be updated with the new code. We will also add code for our follow up work [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/abs/2312.08369).*
+
 This repository contains code for the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/record/8226192).
 
 Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [RLlib](https://www.ray.io/rllib) to run the deep RL experiments.
