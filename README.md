@@ -21,6 +21,10 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 4. Install Julia requirements:
 
         julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
+   
+5. If you want to construct tabular representations of Atari MDPs, run the following command to install our slightly modified version of the Arcading Learning Environment library:
+
+        sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
 
 ## Data
 
