@@ -312,9 +312,9 @@ class StateWrapper(gym.core.Wrapper):
         state = {
             "random_state": unwrapped_env._np_random.__getstate__(),
             "grid": grid.encode(),
-            "carrying": unwrapped_env.carrying.encode()
-            if unwrapped_env.carrying
-            else None,
+            "carrying": (
+                unwrapped_env.carrying.encode() if unwrapped_env.carrying else None
+            ),
         }
         for attribute in self.state_attributes:
             if hasattr(unwrapped_env, attribute):

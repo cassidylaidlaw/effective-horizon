@@ -246,9 +246,11 @@ class AtariEnv(gym.Env):
         self.atari_env = env_class(
             game=self.config["rom_file"],
             frameskip=self.config["frameskip"],
-            repeat_action_probability=0
-            if self.config["deterministic"]
-            else self.config["repeat_action_probability"],
+            repeat_action_probability=(
+                0
+                if self.config["deterministic"]
+                else self.config["repeat_action_probability"]
+            ),
             full_action_space=False,
             render_mode=render_mode,
         )

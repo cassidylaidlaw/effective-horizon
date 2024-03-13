@@ -60,9 +60,10 @@ class AtariHeadDataset(object):
             frame_data_fname = data_fname[:-4] + ".tar.bz2"
             self._reset_episode()
             self.rows_for_this_timestep: List[AtariHeadDataRow] = []
-            with open(data_fname, "r") as data_file, tarfile.open(
-                frame_data_fname, "r"
-            ) as self.frame_data_file:
+            with (
+                open(data_fname, "r") as data_file,
+                tarfile.open(frame_data_fname, "r") as self.frame_data_file,
+            ):
                 self.frame_data_tar_members = {
                     info.name: info for info in self.frame_data_file.getmembers()
                 }

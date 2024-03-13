@@ -192,7 +192,7 @@ def sacred_config(_log):  # noqa
     seed = 0  # noqa: F841
 
     n_eval_episodes = 1
-    eval_freq = 1000
+    eval_freq = 10_000
     deterministic_eval = True
     stop_on_eval_reward = None
     stop_on_median_reward = stop_on_eval_reward  # noqa: F841
@@ -330,9 +330,7 @@ def main(
     _log: Logger,
 ):
     if torch.cuda.is_available():
-        total_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (
-            1024**3
-        )
+        total_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
         max_gpu_frac = min(max_gpu_memory / total_gpu_memory, 1.0)
         torch.cuda.set_per_process_memory_fraction(max_gpu_frac)
         _log.info(

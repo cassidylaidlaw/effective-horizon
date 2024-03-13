@@ -365,9 +365,7 @@ def main(
     _log: Logger,
 ):
     if torch.cuda.is_available():
-        total_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (
-            1024**3
-        )
+        total_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
         max_gpu_frac = min(max_gpu_memory / total_gpu_memory, 1.0)
         torch.cuda.set_per_process_memory_fraction(max_gpu_frac)
         _log.info(

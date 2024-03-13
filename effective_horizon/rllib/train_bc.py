@@ -95,9 +95,11 @@ def sacred_config(_log):  # noqa
         num_rollout_workers=num_workers,
         num_envs_per_worker=num_envs_per_worker,
         compress_observations=compress_observations,
-        batch_mode="complete_episodes"
-        if count_batch_size_by == "episodes"
-        else "truncate_episodes",
+        batch_mode=(
+            "complete_episodes"
+            if count_batch_size_by == "episodes"
+            else "truncate_episodes"
+        ),
     )
     config.resources(
         num_gpus=num_gpus,

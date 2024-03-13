@@ -181,9 +181,9 @@ def main(
             )
             new_transitions_for_prev_states = unique_inverse[prev_num_states:]
             new_transitions_for_prev_states[next_terminal] = -1
-            new_transitions[
-                new_prev_state_ids
-            ] = new_transitions_for_prev_states.reshape((prev_num_states, num_actions))
+            new_transitions[new_prev_state_ids] = (
+                new_transitions_for_prev_states.reshape((prev_num_states, num_actions))
+            )
 
         states_with_screen_ids = unique_states_with_screen_ids
 
