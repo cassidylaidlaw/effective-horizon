@@ -30,7 +30,7 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
 7. If you see an error about `libGL.so.1`, install OpenCV 2 dependencies ([more info](https://stackoverflow.com/a/63377623/200508)):
 
-        sudo apt-get install ffmpeg libsm6 libxext6 -y
+        sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
 
 ## Data
 
@@ -143,6 +143,7 @@ There are a number of scripts, mostly written in Julia, that we used to construc
 
   * For a MiniGrid MDP, run
 
+        export PYTHONPATH=$(pwd)
         julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
             --minigrid \
             --env_name BRIDGE/MiniGrid-KeyCorridorS3R1-v0 \
