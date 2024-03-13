@@ -78,6 +78,7 @@ def test_train_sqirl(tmp_path):
                 "n_epochs": 1,
                 "episodes_per_timestep": 1,
                 "planning_depth": 2,
+                "buffer_size": 10_000,
             },
         }
     )
