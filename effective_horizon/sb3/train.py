@@ -245,7 +245,7 @@ def sacred_config(_log):  # noqa
         n_envs = 1
     elif algo == "SQIRL":
         algo_args = {
-            "buffer_size": 100_000,
+            "buffer_size": 1_000_000,
             "learning_rate": 1e-4,
             "ema_alpha": 0,
             "batch_size": 128,
@@ -257,7 +257,7 @@ def sacred_config(_log):  # noqa
             "reward_scale": 1.0,
             "use_huber_loss": False,
             "scale_losses": True,
-            "loss_scale_smoothing": 0.0,
+            "loss_scale_smoothing": 0.99,
             "num_atoms": 1,
             "replay_buffer_kwargs": {
                 "optimize_memory_usage": True,
