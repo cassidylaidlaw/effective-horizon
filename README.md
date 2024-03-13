@@ -177,6 +177,19 @@ Replace the horizon with the appropriate value for the environment. You can also
       - `min_occupancy_results`: used to calculate the covering length $L$. It can be bounded above by `log(2 * num_states * num_actions) / min_state_action_occupancy`.
   * `consolidated_analyzed_value_dists_*.npy`: these numpy arrays (one for each timestep) contain the full distribution over rewards-to-go when following the exploration policy from each state.
 
+**Analyzing sticky-action MDPs:** the `analyze_sticky_actions.jl` script performs analyses of MDPs with sticky actions, i.e., where there is a probability of repeating the last action at each timestep. It is called similarly to `analyze_mdp.jl`, but does not support `--exploration_policy`:
+
+    julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/analyze_sticky_actions.jl \
+        --mdp path/to/mdp/consolidated.npz \
+        --horizon 10
+
+It will output a file `consolidated_analyzed_sticky_0.25` (the 0.25 is because the probability of a random action is 25%). This file includes:
+
+  * `optimal_return`, `random_return`, and `worst_return`: the optimal return, the return of the policy that takes actions uniformly at random, and the minimum possible return.
+  * `greedy_returns`: a list of returns $J_1, \dots, J_5$, where $J_i$ is the return of the policy which acts greedily on $Q_i$. In the paper, $Q_1$ is defined as the Q-function of the random policy, and $Q_{i+1}$ is the result of applying one step of Q-value iteration to $Q_i$.
+  * `min_k`: minimum value of $k$ for which the sticky-action MDP is $k$-QVI-solvable.
+  * `epw`: the effective planning window $W$ of the sticky-action MDP.
+
 **Computing bounds on the effective horizon:** the `compute_gorp_bounds.jl` script uses the techniques in Appendix C to give more precise bounds on the effective horizon. It can be run with the command
 
     julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/compute_gorp_bounds.jl \

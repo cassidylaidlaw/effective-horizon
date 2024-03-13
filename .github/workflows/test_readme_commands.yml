@@ -151,6 +151,11 @@ jobs:
               --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
               --horizon 10
 
+          rm data/mdps/maze_easy_l0_30_fs1/consolidated_analyzed_sticky_0.25.json
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/analyze_sticky_actions.jl \
+              --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
+              --horizon 10
+
           ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/compute_gorp_bounds.jl \
           --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
           --use_value_dists \
