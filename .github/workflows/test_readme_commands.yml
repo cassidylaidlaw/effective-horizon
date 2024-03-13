@@ -96,7 +96,7 @@ jobs:
 
           ./test_command.sh python -m effective_horizon.sb3.train with algo=SQIRL \
           env_name="BRIDGE/pong_50_fs30-Sticky-v0" \
-          gamma=1 seed=0 \
+          gamma=1 seed=0 algo_args.buffer_size=10_000 \
           algo_args.episodes_per_timestep=$M \
           algo_args.planning_depth=$K
 
