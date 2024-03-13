@@ -34,7 +34,7 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
 ## Data
 
-The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192. The download contains a README with more information about the format of the data.
+The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192. The download contains a [README](./data/bridge_dataset/README.md) with more information about the format of the data.
 
 ## Usage
 

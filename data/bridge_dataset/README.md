@@ -1,6 +1,6 @@
-# BRIDGE dataset
+# BRIDGE dataset v1.0
 
-This directory contains the BRIDGE dataset (Bridging the RL Interdisciplinary Divide with Grounded Environments), as introduced in the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853).
+The BRIDGE dataset (Bridging the RL Interdisciplinary Divide with Grounded Environments) was introduced in the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853).
 
 ## Contents
 
