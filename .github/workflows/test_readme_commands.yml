@@ -72,7 +72,7 @@ jobs:
           pip install stable-baselines3==2.2.1 imitation==1.0.0
           julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
           sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
-          sudo apt-get install ffmpeg libsm6 libxext6 -y
+          sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
 
       - name: RL training
         if: always()
@@ -94,7 +94,7 @@ jobs:
           algo_args.episodes_per_action_sequence=$M \
           algo_args.planning_depth=$K
 
-          ./test_command.sh python -m effective_horizon.experiments.train_sb3 with algo=SQIRL \
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=SQIRL \
           env_name="BRIDGE/pong_50_fs30-Sticky-v0" \
           gamma=1 seed=0 \
           algo_args.episodes_per_timestep=$M \
