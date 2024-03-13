@@ -20,9 +20,17 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
         pip install stable-baselines3==2.2.1 imitation==1.0.0
 
-4. Install Julia requirements:
+5. Install Julia requirements:
 
         julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
+
+6. Install our custom version of the [ALE](https://github.com/Farama-Foundation/Arcade-Learning-Environment) library:
+
+        sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
+
+7. If you see an error about `libGL.so.1`, install OpenCV 2 dependencies ([more info](https://stackoverflow.com/a/63377623/200508)):
+
+        sudo apt-get install ffmpeg libsm6 libxext6 -y
 
 ## Data
 
@@ -76,7 +84,7 @@ Replace `$M` and `$K` with the parameters $m$ and $k$ (see the paper for more de
 
 **SQIRL:** Shallow Q-Iteration via Reinforcement Learning (SQIRL) was introduced in [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf). To train SQIRL on the environments in BRIDGE, run:
 
-    python -m effective_horizon.experiments.train_sb3 with algo=SQIRL \
+    python -m effective_horizon.sb3.train with algo=SQIRL \
     env_name="BRIDGE/pong_50_fs30-Sticky-v0" \
     gamma=1 seed=0 \
     algo_args.episodes_per_timestep=$M \
@@ -90,7 +98,7 @@ Again, replace `$M` and `$K` with the parameters $m$ and $k$ described in the pa
 
 In both papers, we also ran experiments comparing RL algorithms on more typical Atari environments that have a maximum episode length of 27,000 timesteps and use a frameskip of only 3 or 4. To train RL algorithms on the *deterministic* versions of these environments (used in the first paper), use the parameters
 
-    env_name=BRIDGE/Atari-v0 rom=pong \
+    env_name=BRIDGE/Atari-v0 rom_file=pong \
     horizon=27_000 frameskip=4 \
     deterministic=True done_on_life_lost=True \
     reward_scale=1 gamma=0.99 timesteps=10_000_000
@@ -101,7 +109,8 @@ To train RL algorithms on the *stochastic* (sticky-action) versions of these env
 
     env_name=PongNoFrameskip-v4 is_atari=True \
     atari_wrapper_kwargs='{"terminal_on_life_loss": False, "action_repeat_probability": 0.25}' \
-    gamma=0.99 use_impala_cnn=True timesteps=10_000_000
+    gamma=0.99 use_impala_cnn=True \
+    timesteps=10_000_000 eval_freq=100_000
 
 ### Constructing and analyzing tabular MDPs
 
@@ -196,7 +205,7 @@ To train GORP with Julia, run:
     --max_sample_complexity 100000000 \
     --num_runs 101 \
     --optimal_return OPTIMAL_RETURN \
-    --k K \\
+    --k $K \\
     -o path/to/output.json
 
 This script works a bit differently from the Python one—given a value of $k$ and the optimal return for the MDP, it searches for the minimum value of $m$ such that GORP finds an optimal policy at least half the time.
@@ -283,13 +292,19 @@ For both PPO and DQN, the level of parallelism can be chosen by adding `num_work
 
 ## Citation
 
-If you find this repository useful for your research, please cite our paper as follows:
+If you find this repository useful for your research, please consider citing one or both of our papers as follows:
 
     @inproceedings{laidlaw2023effectivehorizon,
       title={Bridging RL Theory and Practice with the Effective Horizon},
       author={Laidlaw, Cassidy and Russell, Stuart and Dragan, Anca},
-      booktitle={arXiv preprint},
+      booktitle={NeurIPS},
       year={2023}
+    }
+    @inproceedings{laidlaw2024stochastic,
+      title={The Effective Horizon Explains Deep RL Performance in Stochastic Environments},
+      author={Laidlaw, Cassidy and Zhu, Banghua and Russell, Stuart and Dragan, Anca},
+      booktitle={ICLR},
+      year={2024}
     }
 
 ## Contact
