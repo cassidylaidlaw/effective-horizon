@@ -103,7 +103,7 @@ jobs:
           ./test_command.sh python -m effective_horizon.sb3.train with algo=PPO \
           use_subproc=True env_name="BRIDGE/pong_50_fs30-v0" \
           gamma=1 seed=0 algo_args.n_steps=128 \
-          env_name=BRIDGE/Atari-v0 rom=pong \
+          env_name=BRIDGE/Atari-v0 rom_file=pong \
           horizon=27_000 frameskip=4 \
           deterministic=True done_on_life_lost=True \
           reward_scale=1 gamma=0.99 timesteps=10_000_000
@@ -113,11 +113,14 @@ jobs:
           gamma=1 seed=0 algo_args.exploration_fraction=0.1 algo_args.learning_starts=0 \
           env_name=PongNoFrameskip-v4 is_atari=True \
           atari_wrapper_kwargs='{"terminal_on_life_loss": False, "action_repeat_probability": 0.25}' \
-          gamma=0.99 use_impala_cnn=True timesteps=10_000_000
+          gamma=0.99 use_impala_cnn=True \
+          timesteps=10_000_000 eval_freq=100_000
 
       - name: Constructing and analyzing tabular MDPs
         if: always()
         run: |
+          K=1
+
           ./test_command.sh julia  --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
               --rom freeway \
               -o data/test_freeway_10_fs30 \
@@ -161,5 +164,5 @@ jobs:
           --max_sample_complexity 100000000 \
           --num_runs 101 \
           --optimal_return 10 \
-          --k $K \\
+          --k $K \
           -o data/test_run_gorp.json
