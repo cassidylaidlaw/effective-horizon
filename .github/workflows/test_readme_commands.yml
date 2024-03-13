@@ -135,6 +135,7 @@ jobs:
               --frameskip 1 \
               --save_screens
 
+          export PYTHONPATH=$(pwd)
           ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
               --minigrid \
               --env_name BRIDGE/MiniGrid-KeyCorridorS3R1-v0 \
