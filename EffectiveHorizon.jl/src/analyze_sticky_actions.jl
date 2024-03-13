@@ -62,7 +62,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     if !haskey(results, "optimal_return") ||
        !haskey(results, "random_return") ||
-       !haskey(results, "worst_return")
+       !haskey(results, "worst_return") ||
+       !haskey(results, "num_states")
         vi = value_iteration(
             transitions,
             rewards,
@@ -72,6 +73,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
         results["optimal_return"] = vi.optimal_values[1, 1]
         results["random_return"] = vi.exploration_values[1, 1]
         results["worst_return"] = vi.worst_values[1, 1]
+
+        # Calculate number of states.
+        println("Calculating number of states...")
+        states = Set{Int}()
+        for timestep in 1:horizon
+            union!(states, vi.visitable_states[timestep])
+        end
+        results["num_states"] = length(states)
     end
 
     if !haskey(results, "min_k")
