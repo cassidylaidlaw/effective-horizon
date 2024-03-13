@@ -1,12 +1,12 @@
 # Bridging RL Theory and Practice with the Effective Horizon
 
-This repository contains code for the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/record/8226192).
+This repository contains code for the papers [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853) and [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/record/8226192).
 
-Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [RLlib](https://www.ray.io/rllib) to run the deep RL experiments.
+Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) to run the deep RL experiments. In a previous version of the code we used [RLlib](https://www.ray.io/rllib) instead; it should still be possible to run the RLlib experiments by following the [instructions at the bottom of the README](#usage-rllib).
 
 ## Installation
 
-1. Install [Python](https://www.python.org/) 3.8, 3.9, or 3.10. Python 3.11 is currently unsupported because [MiniGrid](https://minigrid.farama.org/) does not support it. If you want to run any of the Julia scripts, install [Julia](TODO) 1.8 or later (earlier versions may work but are untested).
+1. Install [Python](https://www.python.org/) 3.8, 3.9, or 3.10. Python 3.11 is currently unsupported because [MiniGrid](https://minigrid.farama.org/) does not support it. If you want to run any of the Julia scripts, install [Julia](https://julialang.org/downloads/) 1.8 or later (other versions may work but are untested).
 2. Clone the repository:
 
         git clone https://github.com/cassidylaidlaw/effective-horizon.git
@@ -16,13 +16,17 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
         pip install -r requirements.txt
 
+4. If you want to run deep RL experiments, install `stable-baselines3` and `imitation`:
+
+        pip install stable-baselines3==2.2.1 imitation==1.0.0
+
 4. Install Julia requirements:
 
         julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
 
 ## Data
 
-The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192
+The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192. The download contains a README with more information about the format of the data.
 
 ## Usage
 
@@ -38,26 +42,66 @@ All of the environments in BRIDGE are made available as gym environments.
 
 **MiniGrid:** MiniGrid environments follow the naming convention `BRIDGE/MiniGrid-$ENV-v0`. For instance, run `gym.make("BRIDGE/MiniGrid-Empty-5x5-v0")` or `gym.make("BRIDGE/MiniGrid-KeyCorridorS3R1-v0")`. There are also versions of the MiniGrid environments with shaped reward functions. There are three shaping functions used in the paper: `Distance`, `OpenDoors`, and `Pickup`. To use the environments with these shaping functions, add the shaping functions and then `Shaped` after the environment name. For instance, run `gym.make("BRIDGE/MiniGrid-Empty-5x5-DistanceShaped-v0")` or `gym.make("BRIDGE/MiniGrid-UnlockPickup-OpenDoorsPickupShaped-v0")`.
 
-### Deep RL training
+#### Sticky-action environments
+
+In [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf), we used sticky-action versions of the BRIDGE environments where there is a 25% chance of repeating the previous action at each timestep. These environments can be constructed by replacing `-v0` with `-Sticky-v0`.
+
+### RL training
 
 **PPO:** To train PPO on the environments in BRIDGE, run:
 
-    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
-    run=PPO train_batch_size=10000 rollout_fragment_length=100 sgd_minibatch_size=1000 \
-    num_sgd_iter=10 num_training_iters=500 seed=0
+    python -m effective_horizon.sb3.train with algo=PPO \
+    use_subproc=True env_name="BRIDGE/pong_50_fs30-v0" \
+    gamma=1 seed=0 algo_args.n_steps=128 
 
-We tuned `train_batch_size` from the choices of 1,000, 10,000, and 100,000; the `num_training_iters` was set appropriately to 5,000, 500, or 50 respectively so that the total number of environment steps over the course of training was 5 million.
+In both papers, we tuned `n_steps` from the choices of 128 and 1,280.
 
 **DQN:** To train DQN on the environments in BRIDGE, run:
 
-    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
-    run=FastDQN train_batch_size=10000 rollout_fragment_length=100 sgd_minibatch_size=1000 \
-    num_training_iters=1000000 stop_on_timesteps=5000000 seed=0 epsilon_timesteps="$EPSILON_TIMESTEPS" \
-    dueling=True double_q=True prioritized_replay=True learning_starts=0 simple_optimizer=True
+    python -m effective_horizon.sb3.train with algo=DQN \
+    env_name="BRIDGE/pong_50_fs30-v0" \
+    gamma=1 seed=0 algo_args.exploration_fraction=0.1 algo_args.learning_starts=0
 
-We tuned `epsilon_timesteps` from the choices of 500,000 and 5,000,000.
+We tuned `exploration_fraction` from the choices of 0.1 and 1.
 
-For both PPO and DQN, the level of parallelism can be chosen by adding `num_workers=N` to the command, which will start N worker processes collecting rollouts in parallel.
+**GORP:** Greedy Over Random Policy (GORP) was introduced in [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). While there is a [faster Julia implementation of GORP](#running-gorp-empirically), we also provide a Stable-baselines3 implementation so that it can easily be tested in new environments. To train GORP on the environments in BRIDGE, run:
+
+    python -m effective_horizon.sb3.train with algo=GORP \
+    env_name="BRIDGE/pong_50_fs30-v0" \
+    gamma=1 seed=0 \
+    algo_args.episodes_per_action_sequence=$M \
+    algo_args.planning_depth=$K
+
+Replace `$M` and `$K` with the parameters $m$ and $k$ (see the paper for more details).
+
+**SQIRL:** Shallow Q-Iteration via Reinforcement Learning (SQIRL) was introduced in [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf). To train SQIRL on the environments in BRIDGE, run:
+
+    python -m effective_horizon.experiments.train_sb3 with algo=SQIRL \
+    env_name="BRIDGE/pong_50_fs30-Sticky-v0" \
+    gamma=1 seed=0 \
+    algo_args.episodes_per_timestep=$M \
+    algo_args.planning_depth=$K
+
+Again, replace `$M` and `$K` with the parameters $m$ and $k$ described in the paper.
+
+> **Note:** For sticky-action MiniGrid environments, we used `gamma=0.99`, as otherwise we found that deep RL generally failed.
+
+#### Long-horizon Atari environments
+
+In both papers, we also ran experiments comparing RL algorithms on more typical Atari environments that have a maximum episode length of 27,000 timesteps and use a frameskip of only 3 or 4. To train RL algorithms on the *deterministic* versions of these environments (used in the first paper), use the parameters
+
+    env_name=BRIDGE/Atari-v0 rom=pong \
+    horizon=27_000 frameskip=4 \
+    deterministic=True done_on_life_lost=True \
+    reward_scale=1 gamma=0.99 timesteps=10_000_000
+
+for the above commands. Replace `pong` with the snake_case name of the game. We set `reward_scale` differently for each Atari games (see Table 5 in the [paper](https://arxiv.org/abs/2304.09853)).
+
+To train RL algorithms on the *stochastic* (sticky-action) versions of these environments (used in the second paper), use the parameters
+
+    env_name=PongNoFrameskip-v4 is_atari=True \
+    atari_wrapper_kwargs='{"terminal_on_life_loss": False, "action_repeat_probability": 0.25}' \
+    gamma=0.99 use_impala_cnn=True timesteps=10_000_000
 
 ### Constructing and analyzing tabular MDPs
 
@@ -105,6 +149,8 @@ This script outputs three files to the directory specified after `-o`:
   * `consolidated.npz`: in this representation, states which are indistinguishable (i.e., every sequence of actions leads to the same sequence of rewards and screens) are combined. This is what we used for analysis in the paper.
   * `consolidated_ignore_screen.npz`: similar to `consolidated.npz`, except that we do not consider screens for determinining indistinguishability. That is, states are combined if every sequence of actions leads to the same sequence of rewards.
 
+See [data format](#data-format) for more details of how these files are structured.
+
 **Analyzing MDPs:** the `analyze_mdp.jl` script performs various analyses of MDPs, including those used to calculate many of the sample complexity bounds in our paper. You can run it with the command
 
     julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/analyze_mdp.jl \
@@ -140,24 +186,9 @@ The will produce an output JSON file with the following results:
 
 ### Running GORP empirically
 
-To use GORP to learn a policy for an environment, we provide both a gym-compatible Python implementation and a faster, parallelized Julia implementation which can run on the tabular MDPs in BRIDGE.
+To use GORP to learn a policy for an environment, we provide both a gym-compatible Python implementation (documented [above](#rl-training)) and a faster, parallelized Julia implementation which can run on the tabular MDPs in BRIDGE that is described here.
 
-**Using Python:** To train GORP, run:
-
-    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
-    run=GORP episodes_per_action_seq=M seed=0
-
-Replace M with the desired parameter $m$ for running GORP. This implementation always uses $k = 1$.
-
-To replicate the long-horizon Atari experiments, run
-
-    python -m effective_horizon.experiments.train with run=GORP \
-    env_name=atari horizon=27000 frameskip=4 deterministic=True rom_file=pong \
-    reward_scale=1 done_on_life_lost=True gamma=0.99 num_training_iters=1000000 seed=0
-
-Set `rom_file` to the desired game and `reward_scale` appropriately according to the reward scales given in the appendix.
-
-**Using Julia:** To train GORP with Julia, run:
+To train GORP with Julia, run:
 
     julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/run_gorp.jl \
     --mdp path/to/mdp/consolidated.npz \
@@ -213,6 +244,42 @@ Again, this will create a number of checkpoint files under `data/logs`; we use `
          python -m effective_horizon.experiments.construct_tabular_policy with mdp=path/to/mdp/consolidated.npz checkpoint=path/to/checkpoint horizon=10 run=RUN out=path/to/mdp/exploration_policy.npy
     
      Replace the horizon with the appropriate horizon and specify `run=BC` for Atari and `run=PPO` for Procgen. The resulting `exploration_policy.npy` file can be passed to the analysis scripts as described above.
+
+## Usage (RLlib)
+
+This section describes how to run experiments with the older RLlib code. Before running these, install RLlib by running
+
+    pip install 'ray[rllib]>=2.5,<2.6'
+
+If you see errors related to `pydantic`, run `pip uninstall -y pydantic`.
+
+### RL training
+
+**PPO:** To train PPO on the environments in BRIDGE, run:
+
+    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
+    run=PPO train_batch_size=10000 rollout_fragment_length=100 sgd_minibatch_size=1000 \
+    num_sgd_iter=10 num_training_iters=500 seed=0
+
+We tuned `train_batch_size` from the choices of 1,000, 10,000, and 100,000; the `num_training_iters` was set appropriately to 5,000, 500, or 50 respectively so that the total number of environment steps over the course of training was 5 million.
+
+**DQN:** To train DQN on the environments in BRIDGE, run:
+
+    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
+    run=FastDQN train_batch_size=10000 rollout_fragment_length=100 sgd_minibatch_size=1000 \
+    num_training_iters=1000000 stop_on_timesteps=5000000 seed=0 epsilon_timesteps="$EPSILON_TIMESTEPS" \
+    dueling=True double_q=True prioritized_replay=True learning_starts=0 simple_optimizer=True
+
+We tuned `epsilon_timesteps` from the choices of 500,000 and 5,000,000.
+
+**GORP:** To train GORP using the Python implementation, run:
+
+    python -m effective_horizon.experiments.train with env_name="BRIDGE/pong_50_fs30-v0" \
+    run=GORP episodes_per_action_seq=$M seed=0
+
+Replace `$M` with the desired parameter $m$ for running GORP. This implementation always uses $k = 1$.
+
+For both PPO and DQN, the level of parallelism can be chosen by adding `num_workers=N` to the command, which will start N worker processes collecting rollouts in parallel.
 
 ## Citation
 
