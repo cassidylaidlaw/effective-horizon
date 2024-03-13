@@ -42,7 +42,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     else
         out_fname =
             splitext(args["mdp"])[1] *
-            "_analyze_sticky_$(repeat_action_probability).json"
+            "_analyzed_sticky_$(repeat_action_probability).json"
     end
 
     # Load MDP into transitions and rewards matrices.

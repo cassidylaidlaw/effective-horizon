@@ -207,13 +207,13 @@ def test_analyze_sticky_actions(tmp_path, randomize_julia_scripts):
             "--horizon",
             str(horizon),
             "-o",
-            out_dir / "consolidated_analyze_sticky_0.25.json",
+            out_dir / "consolidated_analyzed_sticky_0.25.json",
         ]
         subprocess.check_call(analyze_command)
-        with open(out_dir / "consolidated_analyze_sticky_0.25.json") as results_file:
+        with open(out_dir / "consolidated_analyzed_sticky_0.25.json") as results_file:
             results = json.load(results_file)
         with open(
-            mdp_fname[:-4] + "_analyze_sticky_0.25.json"
+            mdp_fname[:-4] + "_analyzed_sticky_0.25.json"
         ) as expected_results_file:
             expected_results = json.load(expected_results_file)
         assert_structure_close(results, expected_results)
