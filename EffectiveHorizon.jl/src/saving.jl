@@ -20,9 +20,10 @@ end
 
 
 
-function get_state_indices(mdp::MDP)
+function get_state_indices_and_max_state_length(mdp::MDP)
     state_indices = ParallelDict{NonTerminalState,Int}()
     state_index = Threads.Atomic{Int}(1)
+    max_state_length = Threads.Atomic{UInt}(0)
     Threads.@threads for subdict in mdp.state_infos.subdicts
         for (state, _) in subdict
             if state == mdp.start_state
@@ -30,9 +31,10 @@ function get_state_indices(mdp::MDP)
             else
                 state_indices[state] = Threads.atomic_add!(state_index, 1)
             end
+            Threads.atomic_max!(max_state_length, state.uncompressed_size)
         end
     end
-    state_indices
+    (state_indices, max_state_length[])
 end
 
 function get_array_representation(
@@ -97,8 +99,43 @@ function get_screen_mapping_array(
     screen_mapping_array
 end
 
-function save(mdp::MDP, save_path; compress = true, save_screens = false)
-    state_indices = get_state_indices(mdp)
+function get_states_arrays(
+    mdp::MDP,
+    state_indices::ParallelDict{NonTerminalState,Int},
+    max_state_length::UInt,
+)
+    compression_contexts = Vector{CompressionContext}(undef, Threads.nthreads())
+    for i in eachindex(compression_contexts)
+        compression_contexts[i] = CompressionContext()
+    end
+
+    state_lengths = Vector{UInt}(undef, num_states(mdp))
+    states_array = Matrix{UInt8}(undef, max_state_length, num_states(mdp))
+    Threads.@threads for subdict in mdp.state_infos.subdicts
+        for (state, state_info) in subdict
+            state_index = state_indices[state]
+            state_lengths[state_index+1] = state.uncompressed_size
+            serialized_state = decompress(
+                state.compressed_serialized_state,
+                state.ddict,
+                state.uncompressed_size,
+                compression_contexts[Threads.threadid()],
+            )
+            states_array[1:state.uncompressed_size, state_index+1] .=
+                serialized_state[1:state.uncompressed_size]
+        end
+    end
+    (state_lengths, states_array)
+end
+
+function save(
+    mdp::MDP,
+    save_path;
+    compress = true,
+    save_screens = false,
+    save_states = false,
+)
+    state_indices, max_state_length = get_state_indices_and_max_state_length(mdp)
     transitions_array, rewards_array = get_array_representation(mdp, state_indices)
 
     if compress
@@ -157,6 +194,41 @@ function save(mdp::MDP, save_path; compress = true, save_screens = false)
         write(screen_mapping_file, npy_header("<i$(sizeof(Int))", (num_states(mdp),)))
         write(screen_mapping_file, reinterpret(UInt8, screen_mapping_array))
         close(screen_mapping_file)
+    end
+
+    if save_states
+        state_lengths, states_array =
+            get_states_arrays(mdp, state_indices, max_state_length)
+
+        if compress
+            state_lengths_file = ZipFile.addfile(
+                zip_writer,
+                "state_lengths.npy",
+                method = ZipFile.Deflate,
+            )
+        else
+            state_lengths_file = open(joinpath(save_path, "state_lengths.npy"), "w")
+        end
+        write(state_lengths_file, npy_header("<u$(sizeof(UInt))", (num_states(mdp),)))
+        write(state_lengths_file, reinterpret(UInt8, state_lengths))
+        close(state_lengths_file)
+
+        if compress
+            states_file =
+                ZipFile.addfile(zip_writer, "states.npy", method = ZipFile.Deflate)
+        else
+            states_file = open(joinpath(save_path, "states.npy"), "w")
+        end
+        write(
+            states_file,
+            npy_header(
+                "<u1",
+                (num_states(mdp), Int(max_state_length)),
+                fortran_order = false,
+            ),
+        )
+        write(states_file, reinterpret(UInt8, states_array))
+        close(states_file)
     end
 
     if compress

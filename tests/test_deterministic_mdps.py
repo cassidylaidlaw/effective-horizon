@@ -8,6 +8,7 @@ from typing import Any, List, cast
 import gymnasium as gym
 import numpy as np
 
+from effective_horizon.envs.deterministic_registration import GYM_NAMESPACE
 from effective_horizon.mdp_utils import get_sparse_mdp, load_mdp, run_value_iteration
 
 logger = logging.getLogger(__name__)
@@ -24,10 +25,18 @@ def test_random_deterministic_mdp():
     transitions, rewards = load_mdp(mdp_fname)
     num_states, num_actions = transitions.shape
     done_state = num_states - 1
-    sparse_transitions, rewards_vector = get_sparse_mdp(transitions, rewards)
+
+    # Sometimes, set the goal to just reach a done state.
+    rewards_for_vi = rewards.copy()
+    if random.random() < 0.1:
+        rewards_for_vi[:, :] = 0
+        rewards_for_vi[transitions == done_state] = 1
+        rewards_for_vi[done_state, :] = 0
+
+    sparse_transitions, rewards_vector = get_sparse_mdp(transitions, rewards_for_vi)
 
     mdp_name = os.path.basename(os.path.dirname(mdp_fname))
-    env_id = f"BRIDGE/{mdp_name}"
+    env_id = f"{GYM_NAMESPACE}/{mdp_name}"
     if not re.match(r".*-v\d+", env_id):
         env_id += "-v0"
     logger.info(f"creating gym env {env_id}")
@@ -76,7 +85,10 @@ def test_random_deterministic_mdp():
 
             state = int(transitions[state, action])
             if done:
-                if not (
+                if "MiniGrid" in env_id and t == horizon - 1:
+                    # MiniGrid envs don't terminate on horizon.
+                    pass
+                elif not (
                     state == done_state or np.all(transitions[state] == done_state)
                 ):
                     raise ValueError(
@@ -85,13 +97,19 @@ def test_random_deterministic_mdp():
                         f"from following actions {actions}"
                     )
                 break
+            elif state == done_state:
+                raise ValueError(
+                    f"expected none-done state but reached done state "
+                    f"with transitions {transitions[state].astype(int)} "
+                    f"from following actions {actions}"
+                )
 
         logger.info(f"actions {' '.join(map(str, actions))} => reward {total_reward}")
 
 
 def test_atari_framestack():
     mdp_fnames = glob.glob(
-        "data/mdps_with_exploration_policy/*/consolidated_framestack.npz"
+        "data/mdps_with_exploration_policy_sb3/*/consolidated_framestack.npz"
     )
     mdp_fnames.sort()
     mdp_fname = random.choice(mdp_fnames)
@@ -107,7 +125,7 @@ def test_atari_framestack():
     screen_ids = mdp["screen_mapping"]
 
     mdp_name = os.path.basename(os.path.dirname(mdp_fname))
-    env_id = f"BRIDGE/{mdp_name}-v0"
+    env_id = f"{GYM_NAMESPACE}/{mdp_name}-v0"
     logger.info(f"creating gym env {env_id}")
     env = gym.make(env_id)
     horizon: int = cast(Any, env).horizon

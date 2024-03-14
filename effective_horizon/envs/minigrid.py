@@ -11,7 +11,7 @@ from minigrid.envs.keycorridor import KeyCorridorEnv
 from minigrid.envs.obstructedmaze import ObstructedMazeEnv
 from minigrid.envs.unlockpickup import UnlockPickupEnv
 from minigrid.minigrid_env import MiniGridEnv
-from minigrid.wrappers import FlatObsWrapper, FullyObsWrapper
+from minigrid.wrappers import FlatObsWrapper, FullyObsWrapper, ImgObsWrapper
 
 
 class DeterministicWrapper(gym.core.Wrapper):
@@ -28,7 +28,7 @@ class DeterministicWrapper(gym.core.Wrapper):
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
-        if reward > 0:
+        if float(reward) > 0:
             reward = 1
 
         return obs, reward, terminated, truncated, info
@@ -108,6 +108,7 @@ class GoalDistanceShapedRewardWrapper(gym.core.Wrapper):
     def step(self, action):
         before_distance = get_distance_to_nearest_goal(self.unwrapped)
         obs, reward, terminated, truncated, info = self.env.step(action)
+        reward = float(reward)
         after_distance = get_distance_to_nearest_goal(self.unwrapped)
 
         assert before_distance is not None and after_distance is not None
@@ -125,6 +126,7 @@ class PickupShapedRewardWrapper(gym.core.Wrapper):
         unwrapped_env: MiniGridEnv = self.unwrapped
         prev_hash = unwrapped_env.hash()
         obs, reward, terminated, truncated, info = self.env.step(action)
+        reward = float(reward)
         new_hash = unwrapped_env.hash()
 
         if new_hash != prev_hash:
@@ -220,6 +222,7 @@ class MinigridShapedRewardWrapper(gym.core.Wrapper):
         picked_up_before = self._get_num_picked_up_objects()
 
         obs, reward, terminated, truncated, info = self.env.step(action)
+        reward = float(reward)
 
         carrying = cast(
             Optional[WorldObjWithHasBeenPickedUp],
@@ -309,9 +312,9 @@ class StateWrapper(gym.core.Wrapper):
         state = {
             "random_state": unwrapped_env._np_random.__getstate__(),
             "grid": grid.encode(),
-            "carrying": unwrapped_env.carrying.encode()
-            if unwrapped_env.carrying
-            else None,
+            "carrying": (
+                unwrapped_env.carrying.encode() if unwrapped_env.carrying else None
+            ),
         }
         for attribute in self.state_attributes:
             if hasattr(unwrapped_env, attribute):
@@ -382,15 +385,50 @@ class StateWrapper(gym.core.Wrapper):
             obj.has_been_picked_up = has_been_picked_up
 
 
+class TimeRemainingWrapper(gym.core.Wrapper):
+    def __init__(self, env, horizon=100):
+        super().__init__(env)
+        self.horizon = horizon
+        assert isinstance(env.observation_space, spaces.Box)
+        self.observation_space = spaces.Box(
+            low=0,
+            high=255,
+            shape=env.observation_space.shape[:-1]
+            + (env.observation_space.shape[-1] + 1,),
+            dtype=np.uint8,
+        )
+
+    def reset(self, *args, **kwargs):
+        obs, info = super().reset(*args, **kwargs)
+        self.t = 0
+        return self._add_time_to_observation(obs), info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        self.t += 1
+        return self._add_time_to_observation(obs), reward, terminated, truncated, info
+
+    def _add_time_to_observation(self, obs: np.ndarray) -> np.ndarray:
+        time_obs = np.ones_like(obs[..., :1]) * max(
+            (self.horizon - self.t) / self.horizon, 0
+        )
+        return np.concatenate([obs, time_obs], axis=-1)
+
+
 def wrap_minigrid_env(
     env,
     navigation_only=False,
     shaping_config: MinigridShapedRewardConfig = DEFAULT_SHAPED_REWARD_CONFIG,
     seed=0,
+    flat_observations=True,
 ):
     env = TimeInvariantWrapper(env)
     env = FullyObsWrapper(env)
-    env = FlatObsWrapper(env)
+    if flat_observations:
+        env = FlatObsWrapper(env)
+    else:
+        env = ImgObsWrapper(env)
+        env = TimeRemainingWrapper(env)
     env = DeterministicWrapper(env, seed=seed)
     if navigation_only:
         env = NavigationOnlyWrapper(env)
@@ -404,6 +442,7 @@ def wrap_minigrid_env(
 def build_env_maker(
     env_id: str,
     shaping_config: MinigridShapedRewardConfig = DEFAULT_SHAPED_REWARD_CONFIG,
+    flat_observations=True,
 ):
     def env_maker(config={}):
         env = gym.make(env_id)
@@ -411,6 +450,7 @@ def build_env_maker(
             env,
             navigation_only="Empty" in env_id,
             shaping_config=shaping_config,
+            flat_observations=flat_observations,
         )
         cast(Any, env).horizon = 100
         return env

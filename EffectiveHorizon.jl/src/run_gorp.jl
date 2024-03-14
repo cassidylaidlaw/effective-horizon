@@ -40,6 +40,25 @@ MultipleGORPResults(
 )
 
 
+struct ActionSequencePolicyArray <: AbstractArray{Float32,3}
+    num_states::Int
+    num_actions::Int
+    actions::Vector{Int}
+end
+
+Base.size(arr::ActionSequencePolicyArray) =
+    (length(arr.actions), num_states, num_actions)
+
+function Base.getindex(arr::ActionSequencePolicyArray, timestep, state, action)
+    @boundscheck checkbounds(arr, timestep, state, action)
+    if action == arr.actions[timestep]
+        return 1
+    else
+        return 0
+    end
+end
+
+
 function action_seq_to_index(action_seq::Vector{Int}, num_actions::Int)
     # Calculate as zero-indexed, then convert.
     index = 0
@@ -67,7 +86,8 @@ function run_gorp(
     exploration_policy::Union{Nothing,Array{Float32,3}},
     variant,
     episodes_per_iteration,
-    k,
+    k;
+    repeat_action_probability = 0,
 )::GORPResults
     num_states, num_actions = size(transitions)
 
@@ -86,6 +106,7 @@ function run_gorp(
             action_seq = index_to_action_seq(action_seq_index, num_actions, k)
             for episode_index = 1:episodes_per_iteration
                 state = 1
+                prev_action::Union{Nothing,Int} = nothing
                 t = 1
                 episode_return::Reward = 0
                 while state != num_states && t <= horizon
@@ -113,10 +134,16 @@ function run_gorp(
                         end
                     end
 
+                    if prev_action !== nothing
+                        if rand(Float32) < repeat_action_probability
+                            action = prev_action
+                        end
+                    end
                     episode_return += rewards[state, action]
                     state = transitions[state, action] + 1
                     t += 1
                     total_timesteps += 1
+                    prev_action = action
                 end
                 action_seq_returns[action_seq_index, episode_index] = episode_return
             end
@@ -135,12 +162,26 @@ function run_gorp(
     end
 
     # Calculate final return.
-    state = 1
-    final_return::Reward = 0
-    for t = 1:horizon
-        action = actions[t]
-        final_return += rewards[state, action]
-        state = transitions[state, action] + 1
+    if repeat_action_probability == 0
+        state = 1
+        final_return::Reward = 0
+        for t = 1:horizon
+            action = actions[t]
+            final_return += rewards[state, action]
+            state = transitions[state, action] + 1
+        end
+    else
+        final_policy = ActionSequencePolicyArray(num_states, num_actions, actions)
+        vi = value_iteration(
+            transitions,
+            rewards,
+            horizon;
+            exploration_policy = final_policy,
+            show_progress = false,
+            repeat_action_probability = repeat_action_probability,
+            only_compute_exploration = true,
+        )
+        final_return = vi.exploration_values[1, 1]
     end
 
     GORPResults(actions .- 1, final_return, total_timesteps, mean_rewards)
@@ -156,7 +197,8 @@ function run_gorp_multiple(
     episodes_per_iteration,
     k,
     num_runs,
-    optimal_return::Reward,
+    optimal_return::Reward;
+    repeat_action_probability = 0,
 )::MultipleGORPResults
     println("Trying n=$(episodes_per_iteration)...")
     num_states, num_actions = size(transitions)
@@ -174,7 +216,8 @@ function run_gorp_multiple(
             exploration_policy,
             variant,
             episodes_per_iteration,
-            k,
+            k;
+            repeat_action_probability = repeat_action_probability,
         )
         actions[run_index, :] .= run_results.actions
         mean_rewards[run_index, :] .= run_results.mean_rewards
@@ -218,6 +261,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         "--optimal_return"
         help = "optimal return for MDP"
         arg_type = Float32
+        required = true
         "--variant"
         help = "variant of gorp algorithm (mean or max)"
         arg_type = Symbol
@@ -238,6 +282,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
         help = "use an exploration policy other than the random one"
         arg_type = String
         required = false
+        "--repeat_action_probability"
+        help = "repeat action probability for sticky actions"
+        arg_type = Float32
+        default = zero(Float32)
     end
     args = parse_args(arg_parse_settings)
 
@@ -259,6 +307,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     num_runs = args["num_runs"]
     max_sample_complexity = args["max_sample_complexity"]
     k = args["k"]
+    repeat_action_probability = args["repeat_action_probability"]
 
     min_n = 1
     max_n = Int(floor(max_sample_complexity / ((horizon^2) * (num_actions^k))))
@@ -272,7 +321,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
         min_n,
         k,
         num_runs,
-        optimal_return,
+        optimal_return;
+        repeat_action_probability = repeat_action_probability,
     )
     max_results = run_gorp_multiple(
         transitions,
@@ -283,7 +333,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
         max_n,
         k,
         num_runs,
-        optimal_return,
+        optimal_return;
+        repeat_action_probability = repeat_action_probability,
     )
 
     while max_n - min_n > 1
@@ -306,7 +357,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
             mindpoint_n,
             k,
             num_runs,
-            optimal_return,
+            optimal_return;
+            repeat_action_probability = repeat_action_probability,
         )
 
         if midpoint_results.median_sample_complexity == Inf32

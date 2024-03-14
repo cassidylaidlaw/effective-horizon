@@ -2,7 +2,7 @@
 using CodecZstd.LibZstd
 
 const DEFAULT_COMPRESSION_LEVEL = 3
-const MAX_DATA_LEN = 101000
+const MAX_DATA_LEN = 2000000
 
 include("config.jl")
 

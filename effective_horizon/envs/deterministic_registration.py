@@ -10,18 +10,12 @@ import gymnasium as gym
 from gymnasium.envs.registration import EnvSpec, register, registry
 from procgen.env import EXPLORATION_LEVEL_SEEDS
 
-try:
-    from ray.tune.registry import register_env
-except ImportError:
-
-    def register_env(*args, **kwargs):
-        pass
-
-
 from .atari import AtariEnv, AtariEnvConfig, all_games
 from .minigrid import DEFAULT_SHAPED_REWARD_CONFIG, MinigridShapedRewardWrapper
 from .minigrid import build_env_maker as build_minigrid_env_maker
 from .procgen import DeterministicProcgenEnv, DeterministicProcgenEnvConfig
+from .utils import register_rllib_env_if_installed
+from .wrappers import StickyActionsWrapper
 
 GYM_NAMESPACE = "BRIDGE"
 
@@ -98,13 +92,15 @@ def register_atari_envs():
                 "repeat_action_probability": 0,
                 "deterministic": True,
                 "reward_scale": 1 / atari_reward_factors[rom],
+                "fire_on_reset": False,
+                "clip_rewards": False,
             }
             register(
                 id=f"{GYM_NAMESPACE}/{env_id}-v0",
-                entry_point=AtariEnv,
+                entry_point=AtariEnv,  # type: ignore
                 kwargs={"config": config},
             )
-            register_env(
+            register_rllib_env_if_installed(
                 f"{GYM_NAMESPACE}/{env_id}-v0",
                 lambda _: AtariEnv(config),
             )
@@ -165,15 +161,16 @@ def register_procgen_envs():
                         "distribution_mode": distribution_mode,
                         "level": level,
                         "frameskip": frameskip,
+                        "framestack": 1,
                         "num_actions": procgen_num_actions[env_name],
                         "horizon": horizon,
                     }
                     register(
                         id=f"{GYM_NAMESPACE}/{env_id}-v0",
-                        entry_point=DeterministicProcgenEnv,
+                        entry_point=DeterministicProcgenEnv,  # type: ignore
                         kwargs={"config": config},
                     )
-                    register_env(
+                    register_rllib_env_if_installed(
                         f"{GYM_NAMESPACE}/{env_id}-v0",
                         lambda _: DeterministicProcgenEnv(config),
                     )
@@ -194,7 +191,7 @@ def subsets(l: List[T]) -> Iterable[List[T]]:  # noqa: E741
 def register_minigrid_envs():
     env_spec: EnvSpec
     for env_spec in list(registry.values()):
-        if env_spec.id.startswith("MiniGrid"):
+        if env_spec.id.startswith("MiniGrid") and env_spec.id.endswith("-v0"):
             base_env = gym.make(env_spec.id)
             base_env.reset()
             all_shaping_functions = (
@@ -221,24 +218,73 @@ def register_minigrid_envs():
                     env_id += "Lava"
                 if shaping_functions:
                     env_id += "Shaped"
-                env_id += "-v0"
 
+                env_maker = build_minigrid_env_maker(
+                    env_spec.id,
+                    shaping_config=shaping_config,
+                )
                 register(
-                    id=f"{GYM_NAMESPACE}/{env_id}",
-                    entry_point=build_minigrid_env_maker(
-                        env_spec.id,
-                        shaping_config=shaping_config,
-                    ),
+                    id=f"{GYM_NAMESPACE}/{env_id}-v0",
+                    entry_point=env_maker,
+                    max_episode_steps=100,
                 )
-                register_env(
-                    f"{GYM_NAMESPACE}/{env_id}",
-                    build_minigrid_env_maker(
-                        env_spec.id,
-                        shaping_config=shaping_config,
-                    ),
+                register_rllib_env_if_installed(
+                    f"{GYM_NAMESPACE}/{env_id}-v0",
+                    env_maker,
+                )
+
+                image_obs_env_maker = build_minigrid_env_maker(
+                    env_spec.id,
+                    shaping_config=shaping_config,
+                    flat_observations=False,
+                )
+                register(
+                    id=f"{GYM_NAMESPACE}/{env_id}-ImgObs-v0",
+                    entry_point=image_obs_env_maker,
+                    max_episode_steps=100,
+                )
+                register_rllib_env_if_installed(
+                    f"{GYM_NAMESPACE}/{env_id}-ImgObs-v0",
+                    image_obs_env_maker,
                 )
 
 
-register_atari_envs()
-register_procgen_envs()
-register_minigrid_envs()
+def register_sticky_envs():
+    env_spec: EnvSpec
+    for env_spec in list(registry.values()):
+        if env_spec.id.startswith(f"{GYM_NAMESPACE}/"):
+            env_id_parts = env_spec.id.split("-")
+            env_id_parts.insert(-1, "Sticky")
+            env_id = "-".join(env_id_parts)
+            base_env_id = env_spec.id
+            if "MiniGrid" in base_env_id:
+                # Always use ImgObs version for sticky environments.
+                if "-ImgObs-" in base_env_id:
+                    env_id = env_id.replace("-ImgObs", "")
+                else:
+                    continue
+            env_creator = (
+                lambda base_env_id=base_env_id, **kwargs: StickyActionsWrapper(
+                    gym.make(base_env_id)
+                )
+            )
+            register(
+                id=env_id,
+                entry_point=env_creator,
+            )
+
+
+_envs_registered = False
+
+
+def register_all():
+    global _envs_registered
+    if not _envs_registered:
+        register_atari_envs()
+        register_procgen_envs()
+        register_minigrid_envs()
+        register_sticky_envs()
+        _envs_registered = True
+
+
+register_all()

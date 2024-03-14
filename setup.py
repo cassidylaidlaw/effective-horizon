@@ -1,0 +1,52 @@
+from distutils.core import setup
+
+setup(
+    name="effective-horizon",
+    packages=[
+        "effective_horizon",
+        "effective_horizon.envs",
+        "effective_horizon.scripts",
+        "effective_horizon.sb3",
+        "effective_horizon.sb3.algorithms",
+        "effective_horizon.rllib",
+        "effective_horizon.rllib.algorithms",
+    ],
+    package_data={"effective_horizon": ["py.typed"]},
+    version="0.0.1",
+    license="MIT",
+    description='Code for the NeurIPS 2023 paper "Bridging RL Theory and Practice \
+with the Effective horizon" and the ICLR 2024 paper "The Effective Horizon Explains \
+Deep RL Performance in Stochastic Environments".',
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    author="Cassidy Laidlaw",
+    author_email="cassidy_laidlaw@berkeley.edu",
+    url="https://github.com/cassidylaidlaw/effective-horizon",
+    keywords=["reinforcement learning", "machine learning"],
+    install_requires=[
+        "sacred>=0.8.2",
+        "torch>=1.10.0",
+        "minigrid>=2.2,<2.3",
+        "gymnasium[atari]",
+        "numpy>=1.20.3",
+        "scipy>=1.8",
+        "autorom[accept-rom-license]>=0.4.2",
+        "GPUtil>=1.4.0",
+        "procgen>=0.10.7",
+        "torchvision>=0.11.1",
+        "tensorflow-probability",
+        "tqdm",
+        "opencv-python",
+        "tensorboard",
+    ],
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ],
+)

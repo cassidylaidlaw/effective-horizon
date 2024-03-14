@@ -1,4 +1,4 @@
-from typing import Any, Union, cast
+from typing import Any, Callable, Union, cast
 
 from gym import spaces as gym_spaces
 from gymnasium import spaces as gymnasium_spaces
@@ -34,3 +34,12 @@ def convert_gym_space(
         )
     else:
         raise ValueError(f"Unknown space type: {type(space)}")
+
+
+def register_rllib_env_if_installed(name: str, env_creator: Callable):
+    try:
+        from ray.tune.registry import register_env
+    except ImportError:
+        return
+
+    return register_env(name, env_creator)

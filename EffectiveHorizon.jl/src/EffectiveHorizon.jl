@@ -1,7 +1,8 @@
 module EffectiveHorizon
 
 using DataStructures: Deque
-using TensorBoardLogger, Logging
+using TensorBoardLogger
+using Logging
 import Base.@kwdef
 
 export TerminalState,
@@ -24,6 +25,7 @@ export TerminalState,
     load_mdp,
     value_iteration,
     calculate_minimum_k,
+    calculate_greedy_returns,
     distributional_value_iteration,
     calculate_min_occupancy,
     load_moments,
