@@ -77,7 +77,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         # Calculate number of states.
         println("Calculating number of states...")
         states = Set{Int}()
-        for timestep in 1:horizon
+        for timestep = 1:horizon
             union!(states, vi.visitable_states[timestep])
         end
         results["num_states"] = length(states)
