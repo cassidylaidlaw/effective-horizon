@@ -53,6 +53,13 @@ MDPs are stored as a [NumPy NPZ archive](https://numpy.org/doc/stable/reference/
 
 `transitions` and `rewards` are always included in the MDP file. The other arrays may or may not be present depending on whether they are too large to be stored.
 
+## Changelog
+
+  * **Version 1.0** (August 2023): initial version of the dataset.
+  * **Version 1.1** (April 2024):
+      * Fixed an issue with constructing MiniGrid MDPs that sometimes led to mismatches between the Python environments and tabular representations.
+      * Added sticky-action results from *The Effective Horizon Explains Deep RL Performance in Stochastic Environments*.
+
 ## Datasheet
 
 We provide a datasheet, as proposed by [Gebru et al.](https://arxiv.org/abs/1803.09010), for the BRIDGE dataset.
