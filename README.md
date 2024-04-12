@@ -1,6 +1,6 @@
 # Bridging RL Theory and Practice with the Effective Horizon
 
-This repository contains code for the papers [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853) and [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/record/8226192).
+This repository contains code for the papers [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853) and [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf). It includes the programs used to construct and analyze [the BRIDGE dataset](https://zenodo.org/records/10966777).
 
 Part of the code is written in Python and part in Julia. We used Julia for the programs that construct and analyze the tabular representations of the MDPs in BRIDGE, due to its speed and native support for multithreading. We used Python and [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) to run the deep RL experiments. In a previous version of the code we used [RLlib](https://www.ray.io/rllib) instead; it should still be possible to run the RLlib experiments by following the [instructions at the bottom of the README](#usage-rllib).
 
@@ -34,7 +34,7 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
 ## Data
 
-The BRIDGE dataset can be downloaded here: https://zenodo.org/record/8226192. The download contains a [README](./data/bridge_dataset/README.md) with more information about the format of the data.
+The BRIDGE dataset can be downloaded here: https://zenodo.org/records/10966777. The download contains a [README](./data/bridge_dataset/README.md) with more information about the format of the data.
 
 ## Usage
 
@@ -186,7 +186,7 @@ Replace the horizon with the appropriate value for the environment. You can also
 It will output a file `consolidated_analyzed_sticky_0.25` (the 0.25 is because the probability of a random action is 25%). This file includes:
 
   * `optimal_return`, `random_return`, and `worst_return`: the optimal return, the return of the policy that takes actions uniformly at random, and the minimum possible return.
-  * `greedy_returns`: a list of returns $J_1, \dots, J_5$, where $J_i$ is the return of the policy which acts greedily on $Q_i$. In the paper, $Q_1$ is defined as the Q-function of the random policy, and $Q_{i+1}$ is the result of applying one step of Q-value iteration to $Q_i$.
+  * `greedy_returns`: a list of returns $J_1, \dots, J_5$, where $J_i$ is the return of the policy which acts greedily on $Q^i$. In the paper, $Q^1$ is defined as the Q-function of the random policy, and $Q^{i+1}$ is the result of applying one step of Q-value iteration to $Q^i$.
   * `min_k`: minimum value of $k$ for which the sticky-action MDP is $k$-QVI-solvable.
   * `epw`: the effective planning window $W$ of the sticky-action MDP.
 
