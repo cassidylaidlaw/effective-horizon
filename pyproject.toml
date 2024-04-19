@@ -3,7 +3,7 @@ requires = ["setuptools"]
 
 [project]
 name = "effective-horizon"
-version = "0.1.1"
+version = "0.1.3"
 description = 'Code for the NeurIPS 2023 paper "Bridging RL Theory and Practice with the Effective horizon" and the ICLR 2024 paper "The Effective Horizon Explains Deep RL Performance in Stochastic Environments".'
 authors = [
     {name = "Cassidy Laidlaw", email = "cassidy_laidlaw@berkeley.edu"},
