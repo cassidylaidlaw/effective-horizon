@@ -64,7 +64,7 @@ jobs:
 
       - name: Install pip requirements
         run: |
-          pip install --upgrade -e .
+          pip install --upgrade -e .[dev]
 
       - name: Run tests
         if: ${{ always() }}
