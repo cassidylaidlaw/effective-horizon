@@ -7,28 +7,31 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 ## Installation
 
 1. Install [Python](https://www.python.org/) 3.8, 3.9, or 3.10. Python 3.11 is currently unsupported because [MiniGrid](https://minigrid.farama.org/) does not support it. If you want to run any of the Julia scripts, install [Julia](https://julialang.org/downloads/) 1.8 or later (other versions may work but are untested).
-2. Clone the repository:
+
+2. If you just need the Python code, run `pip install effective-horizon`. Run `pip install effective-horizon[sb3]` to also install the dependencies for running deep RL experiments.
+
+3. Alternatively, to use the Julia code, clone the repository:
 
         git clone https://github.com/cassidylaidlaw/effective-horizon.git
         cd effective-horizon
 
-3. Install pip requirements:
+4. Install pip requirements:
 
         pip install -e .
 
-4. If you want to run deep RL experiments, install `stable-baselines3` and `imitation` by running:
+5. If you want to run deep RL experiments, install `stable-baselines3` and `imitation` by running:
 
         pip install -e .[sb3]
 
-5. Install Julia requirements:
+6. Install Julia requirements:
 
         julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
    
-6. If you want to construct tabular representations of Atari MDPs, run the following command to install our custom version of the [ALE](https://github.com/Farama-Foundation/Arcade-Learning-Environment) library:
+7. If you want to construct tabular representations of Atari MDPs, run the following command to install our custom version of the [ALE](https://github.com/Farama-Foundation/Arcade-Learning-Environment) library:
 
         sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
 
-7. If you see an error about `libGL.so.1`, install OpenCV 2 dependencies ([more info](https://stackoverflow.com/a/63377623/200508)):
+8. If you see an error about `libGL.so.1`, install OpenCV 2 dependencies ([more info](https://stackoverflow.com/a/63377623/200508)):
 
         sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
 
