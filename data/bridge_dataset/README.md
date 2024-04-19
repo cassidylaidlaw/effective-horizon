@@ -2,6 +2,10 @@
 
 The BRIDGE dataset (Bridging the RL Interdisciplinary Divide with Grounded Environments) was introduced in the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). Version 1.1 also includes data used in the paper [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf).
 
+See the [getting_started.ipynb](https://github.com/cassidylaidlaw/effective-horizon/blob/main/getting_started.ipynb) notebook for examples of how to use the MDPs in the BRIDGE dataset.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cassidylaidlaw/effective-horizon/blob/main/getting_started.ipynb)
+
 ## Contents
 
 The data is organized as follows:

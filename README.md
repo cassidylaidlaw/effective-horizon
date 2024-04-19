@@ -36,6 +36,10 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
 The BRIDGE dataset can be downloaded here: https://zenodo.org/records/10966777. The download contains a [README](./data/bridge_dataset/README.md) with more information about the format of the data.
 
+Also, see the [getting_started.ipynb](getting_started.ipynb) notebook for examples of how to use the MDPs in the BRIDGE dataset.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cassidylaidlaw/effective-horizon/blob/main/getting_started.ipynb)
+
 ## Usage
 
 This section explains how to get started with using the code and how to run the experiments from the paper.
