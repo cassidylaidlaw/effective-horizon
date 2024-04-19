@@ -3,7 +3,7 @@ requires = ["setuptools"]
 
 [project]
 name = "effective-horizon"
-version = "0.1.0"
+version = "0.1.1"
 description = 'Code for the NeurIPS 2023 paper "Bridging RL Theory and Practice with the Effective horizon" and the ICLR 2024 paper "The Effective Horizon Explains Deep RL Performance in Stochastic Environments".'
 authors = [
     {name = "Cassidy Laidlaw", email = "cassidy_laidlaw@berkeley.edu"},
@@ -42,6 +42,17 @@ Homepage = "https://github.com/cassidylaidlaw/effective-horizon"
 
 [tool.setuptools.dynamic]
 readme = {file=["README.md"], content-type="text/markdown"}
+
+[tool.setuptools]
+packages = [
+    "effective_horizon",
+    "effective_horizon.envs",
+    "effective_horizon.scripts",
+    "effective_horizon.sb3",
+    "effective_horizon.sb3.algorithms",
+    "effective_horizon.rllib",
+    "effective_horizon.rllib.algorithms",
+]
 
 [project.optional-dependencies]
 dev = [
