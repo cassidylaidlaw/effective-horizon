@@ -1,13 +1,80 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "effective-horizon"
+version = "0.1.0"
+description = 'Code for the NeurIPS 2023 paper "Bridging RL Theory and Practice with the Effective horizon" and the ICLR 2024 paper "The Effective Horizon Explains Deep RL Performance in Stochastic Environments".'
+authors = [
+    {name = "Cassidy Laidlaw", email = "cassidy_laidlaw@berkeley.edu"},
+]
+dynamic = ["readme"]
+dependencies = [
+    "sacred>=0.8.2",
+    "torch>=1.10.0",
+    "minigrid>=2.2,<2.3",
+    "gymnasium[atari]",
+    "numpy>=1.20.3",
+    "scipy>=1.8",
+    "autorom[accept-rom-license]>=0.4.2",
+    "GPUtil>=1.4.0",
+    "procgen>=0.10.7",
+    "torchvision>=0.11.1",
+    "tensorflow-probability",
+    "tqdm",
+    "opencv-python",
+    "tensorboard",
+]
+requires-python = ">= 3.8"
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/cassidylaidlaw/effective-horizon"
+
+[tool.setuptools.dynamic]
+readme = {file=["README.md"], content-type="text/markdown"}
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "pep8-naming",
+    "mypy",
+    "pytest",
+    "pytest-timeout",
+    "pytest-xdist",
+    "pytest-notebook",
+    "isort",
+    "types-psutil",
+    "ipykernel",
+]
+sb3 = [
+    "stable-baselines3==2.2.1",
+    "imitation==1.0.0",
+]
+rllib = [
+    "ray[rllib]>=2.5,<2.6",
+]
+
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py38']
 include = '\.pyi?$'
 exclude = ''
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["uses_rllib"]
-timeout = 600
+markers = ["uses_rllib", "uses_sb3", "uses_julia", "uses_cuda", "slow"]
+timeout = 1200
 
 [tool.isort]
 profile = "black"

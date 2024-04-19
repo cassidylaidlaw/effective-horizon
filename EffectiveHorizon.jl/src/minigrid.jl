@@ -18,6 +18,8 @@ mutable struct MiniGridEnv <: Env
     env::Any
     done::Bool
     obs::Vector{UInt8}
+    screen_width::Int
+    screen_height::Int
     config::MiniGridMDPConfig
 
     function MiniGridEnv(config::MiniGridMDPConfig)
@@ -28,12 +30,13 @@ mutable struct MiniGridEnv <: Env
         pyimport("sys").setdlopenflags(os.RTLD_NOW | os.RTLD_DEEPBIND)
 
         pyimport("effective_horizon.envs.minigrid")
-        ray_registry = pyimport("ray.tune.registry")
-        env.env =
-            ray_registry._global_registry.get(ray_registry.ENV_CREATOR, config.env_name)(
-                Dict(),
-            )
+        gym = pyimport("gymnasium")
+        env.env = gym.make(config.env_name)
         env.obs, info = env.env.reset()
+
+        env.env.unwrapped.render_mode = "rgb_array"
+        screen = env.env.render()
+        env.screen_height, env.screen_width, _ = size(screen)
 
         env.done = false
         env
@@ -45,7 +48,7 @@ function get_env(config::MiniGridMDPConfig)::Env
 end
 
 function get_actions(env::MiniGridEnv)
-    0:env.env.action_space.n-1
+    0:pybuiltin("int")(env.env.action_space.n)-1
 end
 
 function get_state(env::MiniGridEnv)::Vector{UInt8}
@@ -53,15 +56,17 @@ function get_state(env::MiniGridEnv)::Vector{UInt8}
 end
 
 function get_screen(env::MiniGridEnv)::Vector{UInt8}
-    env.obs
+    screen = env.env.render()
+    @assert size(screen) == (env.screen_height, env.screen_width, 3)
+    vec(permutedims(screen, (3, 2, 1)))
 end
 
 function get_screen_width(env::MiniGridEnv)::Int
-    ceil(Int, length(env.obs) / 3)
+    env.screen_width
 end
 
 function get_screen_height(env::MiniGridEnv)::Int
-    1
+    env.screen_height
 end
 
 function set_state!(env::MiniGridEnv, state::AbstractVector{UInt8})

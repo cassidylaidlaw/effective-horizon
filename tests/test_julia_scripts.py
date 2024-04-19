@@ -4,6 +4,7 @@ import random
 import subprocess
 
 import numpy as np
+import pytest
 
 
 def assert_structure_close(a, b, eps=1e-8):
@@ -30,13 +31,14 @@ TEST_MDPS = [
     ("data/mdps/freeway_10_fs30/consolidated.npz", 10),
     ("data/mdps/maze_easy_l0_30_fs1/consolidated.npz", 30),
     (
-        "data/mdps_with_exploration_policy/freeway_10_fs30/consolidated_framestack.npz",
+        "data/mdps_with_exploration_policy_sb3/freeway_10_fs30/consolidated_framestack.npz",
         10,
     ),
-    ("data/mdps_with_exploration_policy/maze_easy_l0_30_fs1/consolidated.npz", 30),
+    ("data/mdps_with_exploration_policy_sb3/maze_easy_l0_30_fs1/consolidated.npz", 30),
 ]
 
 
+@pytest.mark.uses_julia
 def test_construct_atari_mdp(tmp_path):
     subprocess.check_call(
         [
@@ -54,6 +56,7 @@ def test_construct_atari_mdp(tmp_path):
             "30",
             "--done_on_life_lost",
             "--save_screens",
+            "--save_states",
         ]
     )
     for mdp_fname, expected_num_states in [
@@ -63,8 +66,13 @@ def test_construct_atari_mdp(tmp_path):
     ]:
         mdp = np.load(tmp_path / mdp_fname)
         assert mdp["transitions"].shape == (expected_num_states, 3)
+        assert mdp["screen_mapping"].shape == (expected_num_states,)
+        state_lengths = mdp["state_lengths"]
+        assert state_lengths.shape == (expected_num_states,)
+        assert mdp["states"].shape == (expected_num_states, state_lengths.max())
 
 
+@pytest.mark.uses_julia
 def test_construct_procgen_mdp(tmp_path):
     subprocess.check_call(
         [
@@ -85,6 +93,7 @@ def test_construct_procgen_mdp(tmp_path):
             "--frameskip",
             "1",
             "--save_screens",
+            "--save_states",
         ]
     )
     for mdp_fname, expected_num_states in [
@@ -94,8 +103,13 @@ def test_construct_procgen_mdp(tmp_path):
     ]:
         mdp = np.load(tmp_path / mdp_fname)
         assert mdp["transitions"].shape == (expected_num_states, 9)
+        assert mdp["screen_mapping"].shape == (expected_num_states,)
+        state_lengths = mdp["state_lengths"]
+        assert state_lengths.shape == (expected_num_states,)
+        assert mdp["states"].shape == (expected_num_states, state_lengths.max())
 
 
+@pytest.mark.uses_julia
 def test_construct_minigrid_mdp(tmp_path):
     subprocess.check_call(
         [
@@ -111,19 +125,30 @@ def test_construct_minigrid_mdp(tmp_path):
             "100000000",
             "--frameskip",
             "1",
+            "--save_screens",
+            "--save_states",
         ]
     )
     for mdp_fname, expected_num_states in [
         ("mdp.npz", 169),
-        ("consolidated.npz", 169),
+        ("consolidated.npz", 168),
         ("consolidated_ignore_screen.npz", 168),
     ]:
         mdp = np.load(tmp_path / mdp_fname)
         assert mdp["transitions"].shape == (expected_num_states, 6)
+        assert mdp["screen_mapping"].shape == (expected_num_states,)
+        state_lengths = mdp["state_lengths"]
+        assert state_lengths.shape == (expected_num_states,)
+        assert mdp["states"].shape == (expected_num_states, state_lengths.max())
 
 
-def test_analyze_mdp(tmp_path):
-    for mdp_fname, horizon in TEST_MDPS:
+@pytest.mark.uses_julia
+def test_analyze_mdp(tmp_path, randomize_julia_scripts):
+    test_mdps = TEST_MDPS
+    if randomize_julia_scripts:
+        test_mdps = random.sample(test_mdps, 1)
+
+    for mdp_fname, horizon in test_mdps:
         mdp_type = mdp_fname.split("/")[1]
         mdp_name = mdp_fname.split("/")[-2]
         out_dir = tmp_path / mdp_type / mdp_name
@@ -139,7 +164,7 @@ def test_analyze_mdp(tmp_path):
             "-o",
             out_dir / "consolidated_analyzed.json",
         ]
-        if mdp_type == "mdps_with_exploration_policy":
+        if mdp_type == "mdps_with_exploration_policy_sb3":
             analyze_command.extend(
                 [
                     "--exploration_policy",
@@ -158,8 +183,49 @@ def test_analyze_mdp(tmp_path):
         assert_structure_close(value_dists, expected_value_dists)
 
 
-def test_compute_gorp_bounds(tmp_path):
-    for mdp_fname, horizon in TEST_MDPS:
+@pytest.mark.uses_julia
+def test_analyze_sticky_actions(tmp_path, randomize_julia_scripts):
+    test_mdps = TEST_MDPS
+    if randomize_julia_scripts:
+        test_mdps = random.sample(test_mdps, 1)
+
+    for mdp_fname, horizon in test_mdps:
+        mdp_type = mdp_fname.split("/")[1]
+        if mdp_type == "mdps_with_exploration_policy_sb3":
+            # We don't analyze exploration policies for sticky actions.
+            continue
+
+        mdp_name = mdp_fname.split("/")[-2]
+        out_dir = tmp_path / mdp_type / mdp_name
+        os.makedirs(out_dir, exist_ok=True)
+        analyze_command = [
+            "julia",
+            "--project=EffectiveHorizon.jl",
+            "EffectiveHorizon.jl/src/analyze_sticky_actions.jl",
+            "--mdp",
+            mdp_fname,
+            "--horizon",
+            str(horizon),
+            "-o",
+            out_dir / "consolidated_analyzed_sticky_0.25.json",
+        ]
+        subprocess.check_call(analyze_command)
+        with open(out_dir / "consolidated_analyzed_sticky_0.25.json") as results_file:
+            results = json.load(results_file)
+        with open(
+            mdp_fname[:-4] + "_analyzed_sticky_0.25.json"
+        ) as expected_results_file:
+            expected_results = json.load(expected_results_file)
+        assert_structure_close(results, expected_results)
+
+
+@pytest.mark.uses_julia
+def test_compute_gorp_bounds(tmp_path, randomize_julia_scripts):
+    test_mdps = TEST_MDPS
+    if randomize_julia_scripts:
+        test_mdps = random.sample(test_mdps, 1)
+
+    for mdp_fname, horizon in test_mdps:
         # MiniGrid environments take forever because of the long horizon and
         # because almost all states are optimal, so we skip them.
         if "MiniGrid" in mdp_fname:
@@ -189,7 +255,7 @@ def test_compute_gorp_bounds(tmp_path):
             "-o",
             out_dir / "consolidated_gorp_bounds.json",
         ]
-        if mdp_type == "mdps_with_exploration_policy":
+        if mdp_type == "mdps_with_exploration_policy_sb3":
             gorp_bounds_command.extend(
                 [
                     "--exploration_policy",
@@ -203,6 +269,7 @@ def test_compute_gorp_bounds(tmp_path):
         assert_structure_close(results, expected_results)
 
 
+@pytest.mark.uses_julia
 def test_run_gorp_and_ucb(tmp_path):
     for mdp_fname, horizon in TEST_MDPS:
         mdp_type = mdp_fname.split("/")[1]
@@ -237,7 +304,7 @@ def test_run_gorp_and_ucb(tmp_path):
         if alg == "gorp":
             k = np.random.randint(1, 3)
             command.extend(["--k", str(k)])
-        if mdp_type == "mdps_with_exploration_policy" and alg == "gorp":
+        if mdp_type == "mdps_with_exploration_policy_sb3" and alg == "gorp":
             command.extend(
                 [
                     "--exploration_policy",

@@ -26,6 +26,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         "--save_screens"
         help = "save screen images"
         action = :store_true
+        "--save_states"
+        help = "save serialized states"
+        action = :store_true
         "--horizon"
         help = "maximum episode length"
         arg_type = Int
@@ -98,22 +101,41 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     compress = !args["uncompressed"]
     save_screens = args["save_screens"]
+    save_states = args["save_states"]
 
     println("Consolidating (ignoring screen)...")
     consolidated_mdp = MDP(mdp)
     consolidate_completely!(consolidated_mdp; ignore_screen = true)
     save_fname = joinpath(args["out"], "consolidated_ignore_screen")
     println("Saving to $(save_fname)...")
-    save(consolidated_mdp, save_fname; compress = compress, save_screens = save_screens)
+    save(
+        consolidated_mdp,
+        save_fname;
+        compress = compress,
+        save_screens = save_screens,
+        save_states = save_states,
+    )
 
     println("Consolidating (using screen)...")
     consolidated_mdp = MDP(mdp)
     consolidate_completely!(consolidated_mdp)
     save_fname = joinpath(args["out"], "consolidated")
     println("Saving to $(save_fname)...")
-    save(consolidated_mdp, save_fname; compress = compress, save_screens = save_screens)
+    save(
+        consolidated_mdp,
+        save_fname;
+        compress = compress,
+        save_screens = save_screens,
+        save_states = save_states,
+    )
 
     save_fname = joinpath(args["out"], "mdp")
     println("Saving to $(save_fname)...")
-    save(mdp, save_fname; compress = compress, save_screens = save_screens)
+    save(
+        mdp,
+        save_fname;
+        compress = compress,
+        save_screens = save_screens,
+        save_states = save_states,
+    )
 end

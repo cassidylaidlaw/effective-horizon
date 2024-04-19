@@ -1,0 +1,172 @@
+name: Test README commands
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test_readme:
+    name: Test commands in the README
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        python_version: ['3.9']
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install Julia
+        uses: julia-actions/setup-julia@latest
+        with:
+          version: 1.8.3
+
+      - name: Make test_command.sh script
+        run: |
+          cat <<EOF > test_command.sh
+          #!/bin/bash
+
+          # Run the command in the background
+          echo "\$@"
+          "\$@" &
+          CMD_PID=\$!
+
+          # Wait for 30 seconds
+          sleep 30 & 
+          SLEEP_PID=\$!
+          wait \$SLEEP_PID
+
+          # Check if the command is still running
+          if kill -0 \$CMD_PID 2>/dev/null; then
+              # Command is still running, terminate it
+              kill \$CMD_PID
+              wait \$CMD_PID # Capture the exit code of the command
+              EXIT_CODE=\$?
+              echo "Command terminated after 30 seconds."
+              exit 0
+          else
+              # Command has finished, capture its exit code
+              wait \$CMD_PID
+              EXIT_CODE=\$?
+              if [ \$EXIT_CODE -eq 0 ]; then
+                  echo "Command completed successfully within 30 seconds."
+                  exit 0
+              else
+                  echo "Command failed with exit code \$EXIT_CODE."
+                  exit \$EXIT_CODE
+              fi
+          fi
+          EOF
+          chmod +x test_command.sh
+
+      - name: Installation
+        run: |
+          pip install -e .[sb3]
+          julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
+          sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
+          sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
+
+      - name: RL training
+        if: always()
+        run: |
+          M=1
+          K=1
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=PPO \
+          use_subproc=True env_name="BRIDGE/pong_50_fs30-v0" \
+          gamma=1 seed=0 algo_args.n_steps=128
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=DQN \
+          env_name="BRIDGE/pong_50_fs30-v0" \
+          gamma=1 seed=0 algo_args.exploration_fraction=0.1 algo_args.learning_starts=0
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=GORP \
+          env_name="BRIDGE/pong_50_fs30-v0" \
+          gamma=1 seed=0 \
+          algo_args.episodes_per_action_sequence=$M \
+          algo_args.planning_depth=$K
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=SQIRL \
+          env_name="BRIDGE/pong_50_fs30-Sticky-v0" \
+          gamma=1 seed=0 algo_args.buffer_size=10_000 \
+          algo_args.episodes_per_timestep=$M \
+          algo_args.planning_depth=$K
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=PPO \
+          use_subproc=True env_name="BRIDGE/pong_50_fs30-v0" \
+          gamma=1 seed=0 algo_args.n_steps=128 \
+          env_name=BRIDGE/Atari-v0 rom_file=pong \
+          horizon=27_000 frameskip=4 \
+          deterministic=True done_on_life_lost=True \
+          reward_scale=1 gamma=0.99 timesteps=10_000_000
+
+          ./test_command.sh python -m effective_horizon.sb3.train with algo=DQN \
+          env_name="BRIDGE/pong_50_fs30-v0" \
+          gamma=1 seed=0 algo_args.exploration_fraction=0.1 algo_args.learning_starts=0 \
+          env_name=PongNoFrameskip-v4 is_atari=True \
+          atari_wrapper_kwargs='{"terminal_on_life_loss": False, "action_repeat_probability": 0.25}' \
+          gamma=0.99 use_impala_cnn=True \
+          timesteps=10_000_000 eval_freq=100_000
+
+      - name: Constructing and analyzing tabular MDPs
+        if: always()
+        run: |
+          K=1
+
+          ./test_command.sh julia  --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
+              --rom freeway \
+              -o data/test_freeway_10_fs30 \
+              --horizon 10 \
+              --frameskip 30 \
+              --done_on_life_lost \
+              --save_screens
+
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
+              --env_name maze \
+              --distribution_mode easy \
+              --level 0 \
+              -o data/test_maze_l0_30_fs1 \
+              --horizon 30 \
+              --frameskip 1 \
+              --save_screens
+
+          export PYTHONPATH=$(pwd)
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/construct_mdp.jl \
+              --minigrid \
+              --env_name BRIDGE/MiniGrid-KeyCorridorS3R1-v0 \
+              -o data/test_MiniGrid-KeyCorridorS3R1-v0 \
+              --horizon 100000000 \
+              --frameskip 1
+
+          rm data/mdps/maze_easy_l0_30_fs1/consolidated_analyzed.json
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/analyze_mdp.jl \
+              --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
+              --horizon 10
+
+          rm data/mdps/maze_easy_l0_30_fs1/consolidated_analyzed_sticky_0.25.json
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/analyze_sticky_actions.jl \
+              --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
+              --horizon 10
+
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/compute_gorp_bounds.jl \
+          --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
+          --use_value_dists \
+          --horizon 10 \
+          --max_k 1 \
+          -o data/test_compute_gorp_bounds.json
+
+          ./test_command.sh julia --project=EffectiveHorizon.jl EffectiveHorizon.jl/src/run_gorp.jl \
+          --mdp data/mdps/maze_easy_l0_30_fs1/consolidated.npz \
+          --horizon 10 \
+          --max_sample_complexity 100000000 \
+          --num_runs 101 \
+          --optimal_return 10 \
+          --k $K \
+          -o data/test_run_gorp.json
