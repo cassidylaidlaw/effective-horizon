@@ -8,7 +8,7 @@ description = 'Code for the NeurIPS 2023 paper "Bridging RL Theory and Practice 
 authors = [
     {name = "Cassidy Laidlaw", email = "cassidy_laidlaw@berkeley.edu"},
 ]
-dynamic = ["readme", "license"]
+dynamic = ["readme"]
 dependencies = [
     "sacred>=0.8.2",
     "torch>=1.10.0",
