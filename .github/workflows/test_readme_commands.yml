@@ -68,8 +68,7 @@ jobs:
 
       - name: Installation
         run: |
-          pip install -r requirements.txt
-          pip install stable-baselines3==2.2.1 imitation==1.0.0
+          pip install -e .[sb3]
           julia --project=EffectiveHorizon.jl -e "using Pkg; Pkg.instantiate()"
           sudo cp -v EffectiveHorizon.jl/libale_c.so $(julia --project=EffectiveHorizon.jl -e 'using Libdl, ArcadeLearningEnvironment; print(dlpath(ArcadeLearningEnvironment.libale_c))')
           sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y

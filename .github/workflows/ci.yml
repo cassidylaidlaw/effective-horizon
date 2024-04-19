@@ -64,9 +64,7 @@ jobs:
 
       - name: Install pip requirements
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          pip install --upgrade -r requirements_dev.txt
+          pip install --upgrade -e .
 
       - name: Run tests
         if: ${{ always() }}
@@ -102,21 +100,19 @@ jobs:
 
       - name: Install pip requirements
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          pip install --upgrade -r requirements_dev.txt
+          pip install --upgrade -e .[dev]
       
       - name: Install RLlib requirements
         if: matrix.rl_framework == 'rllib'
         run: |
           # pydantic is installed by isort but messes up RLlib.
           pip uninstall -y pydantic
-          pip install 'ray[rllib]>=2.5,<2.6'
+          pip install -e .[rllib]
 
       - name: Install Stable-Baselines3 requirements
         if: matrix.rl_framework == 'stable_baselines3'
         run: |
-          pip install stable-baselines3==2.2.1 imitation==1.0.0
+          pip install -e .[sb3]
 
       - name: Run flake8
         run: flake8 effective_horizon stubs_rllib tests

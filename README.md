@@ -14,11 +14,11 @@ Part of the code is written in Python and part in Julia. We used Julia for the p
 
 3. Install pip requirements:
 
-        pip install -r requirements.txt
+        pip install -e .
 
-4. If you want to run deep RL experiments, install `stable-baselines3` and `imitation`:
+4. If you want to run deep RL experiments, install `stable-baselines3` and `imitation` by running:
 
-        pip install stable-baselines3==2.2.1 imitation==1.0.0
+        pip install -e .[sb3]
 
 5. Install Julia requirements:
 
@@ -272,7 +272,7 @@ Again, this will create a number of checkpoint files under `data/logs`; we use `
 
 This section describes how to run experiments with the older RLlib code. Before running these, install RLlib by running
 
-    pip install 'ray[rllib]>=2.5,<2.6'
+    pip install -e .[rllib]
 
 If you see errors related to `pydantic`, run `pip uninstall -y pydantic`.
 
