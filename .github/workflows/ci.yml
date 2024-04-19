@@ -151,3 +151,36 @@ jobs:
         if: always() && matrix.rl_framework == 'stable_baselines3'
         run: |
           pytest --timeout=180 -n 2 -m "not uses_julia and not uses_rllib and not uses_cuda and not slow"
+
+  test_notebooks:
+    name: Test notebooks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        python_version: ['3.8', '3.9', '3.10']
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.pyversion }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.pyversion }}-
+
+      - name: Install pip requirements
+        run: |
+          pip install --upgrade -e .[dev]
+
+      - name: Run tests
+        run: |
+          pytest --nb-test-files getting_started.ipynb

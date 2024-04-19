@@ -52,8 +52,10 @@ dev = [
     "pytest",
     "pytest-timeout",
     "pytest-xdist",
+    "pytest-notebook",
     "isort",
     "types-psutil",
+    "ipykernel",
 ]
 sb3 = [
     "stable-baselines3==2.2.1",
