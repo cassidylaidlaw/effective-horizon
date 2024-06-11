@@ -226,7 +226,7 @@ To train GORP with Julia, run:
     --max_sample_complexity 100000000 \
     --num_runs 101 \
     --optimal_return OPTIMAL_RETURN \
-    --k $K \\
+    --k $K \
     -o path/to/output.json
 
 This script works a bit differently from the Python one—given a value of $k$ and the optimal return for the MDP, it searches for the minimum value of $m$ such that GORP finds an optimal policy at least half the time.
