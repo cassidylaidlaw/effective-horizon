@@ -1,4 +1,4 @@
-# BRIDGE dataset v1.1
+# BRIDGE dataset v1.1.1
 
 The BRIDGE dataset (Bridging the RL Interdisciplinary Divide with Grounded Environments) was introduced in the paper [Bridging RL Theory and Practice with the Effective Horizon](https://arxiv.org/abs/2304.09853). Version 1.1 also includes data used in the paper [The Effective Horizon Explains Deep RL Performance in Stochastic Environments](https://arxiv.org/pdf/2312.08369.pdf).
 
@@ -63,6 +63,8 @@ MDPs are stored as a [NumPy NPZ archive](https://numpy.org/doc/stable/reference/
   * **Version 1.1** (April 2024):
       * Fixed an issue with constructing MiniGrid MDPs that sometimes led to mismatches between the Python environments and tabular representations.
       * Added sticky-action results from *The Effective Horizon Explains Deep RL Performance in Stochastic Environments*.
+  * **Version 1.1.1** (June 2024):
+      * Fixed some corrupted `.npz` files.
 
 ## Datasheet
 
